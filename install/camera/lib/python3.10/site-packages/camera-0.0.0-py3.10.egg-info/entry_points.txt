@@ -1,4 +1,8 @@
 [console_scripts]
 camera_node = camera.camera_node:main
+canny = camera.canny:main
+findLine = camera.findLine:main
+noise = camera.noise:main
+sobel = camera.sobel:main
 undistort = camera.undistort:main
 

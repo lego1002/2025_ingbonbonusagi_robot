@@ -22,7 +22,12 @@ setup(
     entry_points={
         'console_scripts': [
             'camera_node = camera.camera_node:main',
-            'undistort = camera.undistort:main'
+            'undistort = camera.undistort:main',
+            'sobel = camera.sobel:main',
+            'findLine = camera.findLine:main',
+            
+            'canny = camera.canny:main',
+            'noise = camera.noise:main',
         ],
     },
 )

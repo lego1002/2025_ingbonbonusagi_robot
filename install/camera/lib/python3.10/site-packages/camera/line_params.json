@@ -1,0 +1,10 @@
+{
+  "roi_top_pct": 31,
+  "center_tol_px": 23,
+  "len_min": 84,
+  "len_max": 148,
+  "hough_thr": 146,
+  "hough_min_len": 77,
+  "hough_max_gap": 22,
+  "edge_thr": 103
+}

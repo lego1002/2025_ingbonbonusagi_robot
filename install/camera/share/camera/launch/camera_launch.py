@@ -11,6 +11,13 @@ def generate_launch_description():
             output='screen'
         ),
         
+        # Node(
+        #     package='camera',
+        #     executable='noise',
+        #     name='noise',
+        #     output='screen'
+        # ),
+        
         #undistort
         Node(
             package='camera',
@@ -19,6 +26,28 @@ def generate_launch_description():
             output='screen'
         ),
         
+        # edge
+        Node(
+            package='camera',
+            executable='sobel',
+            name='sobel',
+            output='screen'
+        ),
+        
+        # Node(
+        #     package='camera',
+        #     executable='canny',
+        #     name='canny',
+        #     output='screen'
+        # ),
+        
+        # fine line
+        Node(
+            package='camera',
+            executable='findLine',
+            name='findLine',
+            output='screen'
+        ),
         
         
     ])

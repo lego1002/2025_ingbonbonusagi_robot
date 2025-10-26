@@ -10,6 +10,10 @@ setup.py
 ../../build/camera/camera.egg-info/zip-safe
 camera/__init__.py
 camera/camera_node.py
+camera/canny.py
+camera/findLine.py
+camera/noise.py
+camera/sobel.py
 camera/undistort.py
 launch/camera_launch.py
 resource/camera
