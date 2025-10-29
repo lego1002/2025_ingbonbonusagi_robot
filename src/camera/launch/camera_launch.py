@@ -11,20 +11,21 @@ def generate_launch_description():
             output='screen'
         ),
         
-        # Node(
-        #     package='camera',
-        #     executable='noise',
-        #     name='noise',
-        #     output='screen'
-        # ),
-        
-        #undistort
+        # undistort
         Node(
             package='camera',
             executable='undistort',
             name='undistort',
             output='screen'
         ),
+        
+        # # noise_filtered
+        # Node(
+        #     package='camera',
+        #     executable='noise',
+        #     name='noise',
+        #     output='screen'
+        # ),
         
         # edge
         Node(
@@ -33,13 +34,6 @@ def generate_launch_description():
             name='sobel',
             output='screen'
         ),
-        
-        # Node(
-        #     package='camera',
-        #     executable='canny',
-        #     name='canny',
-        #     output='screen'
-        # ),
         
         # fine line
         Node(

@@ -1,0 +1,5 @@
+[console_scripts]
+led_controller = ev3_mqtt_bridge.led_controller:main
+motorA_controller = ev3_mqtt_bridge.motor_A_controller:main
+ros_mqtt_bridge = ev3_mqtt_bridge.ros_mqtt_bridge:main
+
