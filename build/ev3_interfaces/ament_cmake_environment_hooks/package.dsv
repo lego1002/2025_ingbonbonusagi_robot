@@ -1,0 +1,4 @@
+source;share/ev3_interfaces/local_setup.bash
+source;share/ev3_interfaces/local_setup.dsv
+source;share/ev3_interfaces/local_setup.sh
+source;share/ev3_interfaces/local_setup.zsh

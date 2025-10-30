@@ -23,6 +23,7 @@ setup(
         'console_scripts': [
             'ros_mqtt_bridge = ev3_mqtt_bridge.ros_mqtt_bridge:main',
             'led_controller = ev3_mqtt_bridge.led_controller:main',
+            'motor_service = ev3_mqtt_bridge.motor_service:main',
             'motorA_controller = ev3_mqtt_bridge.motor_A_controller:main',
         ],
     },

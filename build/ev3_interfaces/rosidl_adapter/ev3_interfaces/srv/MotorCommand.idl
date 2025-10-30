@@ -1,0 +1,35 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ev3_interfaces/srv/MotorCommand.srv
+// generated code does not contain a copyright notice
+
+
+module ev3_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "MotorCommand.srv" "\n"
+      "通用馬達控制命令" "\n"
+      "可指定模式（RUN, STOP, RESET, DUTY, REL, ABS）")
+    struct MotorCommand_Request {
+      @verbatim (language="comment", text=
+        "指令名稱")
+      string mode;
+
+      @verbatim (language="comment", text=
+        "馬達ID (0~5)，或 -1 代表全體")
+      int32 motor_id;
+
+      @verbatim (language="comment", text=
+        "參數1 (duty/degree)")
+      float value1;
+
+      @verbatim (language="comment", text=
+        "參數2 (speed)")
+      float value2;
+    };
+    struct MotorCommand_Response {
+      boolean success;
+
+      string message;
+    };
+  };
+};

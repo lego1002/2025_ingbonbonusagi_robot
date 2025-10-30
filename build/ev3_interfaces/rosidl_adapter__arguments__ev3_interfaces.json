@@ -1,0 +1,6 @@
+{
+  "package_name": "ev3_interfaces",
+  "non_idl_tuples": [
+    "/home/jacky/Documents/robot_bartender/src/ev3_interfaces:srv/MotorCommand.srv"
+  ]
+}

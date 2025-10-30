@@ -1,0 +1,4 @@
+srv/MotorCommand.idl
+srv/MotorCommand.srv
+srv/MotorCommand_Request.msg
+srv/MotorCommand_Response.msg

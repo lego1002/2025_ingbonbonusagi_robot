@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "ev3_interfaces__py",
+		"source" : "/home/jacky/Documents/robot_bartender/build/ev3_interfaces/ev3_interfaces__py"
+	}
+}
