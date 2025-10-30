@@ -9,14 +9,14 @@ class RosMqttBridge(Node):
         super().__init__('ros_mqtt_bridge')
 
         # --- 宣告參數（由 launch 傳入） ---
-        self.declare_parameter('broker_ip')
-        self.declare_parameter('broker_port')
-        self.declare_parameter('username')
-        self.declare_parameter('password')
-        self.declare_parameter('mqtt_pub_topic')   # ROS → MQTT
-        self.declare_parameter('mqtt_sub_topic')   # MQTT → ROS
-        self.declare_parameter('ros_pub_topic')    # MQTT → ROS
-        self.declare_parameter('ros_sub_topic')    # ROS → MQTT
+        self.declare_parameter('broker_ip','')
+        self.declare_parameter('broker_port','')
+        self.declare_parameter('username','')
+        self.declare_parameter('password','')
+        self.declare_parameter('mqtt_pub_topic','')   # ROS → MQTT
+        self.declare_parameter('mqtt_sub_topic','')   # MQTT → ROS
+        self.declare_parameter('ros_pub_topic','')    # MQTT → ROS
+        self.declare_parameter('ros_sub_topic','')    # ROS → MQTT
 
         # --- 取得參數 ---
         broker_ip   = self.get_parameter('broker_ip').get_parameter_value().string_value

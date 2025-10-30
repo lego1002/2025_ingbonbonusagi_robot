@@ -1,36 +1,33 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import time
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from ev3_interfaces.srv import MotorCommand
-import time
 
 class MotorAController(Node):
     """
-    以 Service Client 呼叫 /<ns>/motor_service/command ，做簡單測試流程，
-    或訂閱一個文字 topic，把外部文字命令轉成 service 呼叫。
+    以 Service Client 呼叫 /<ns>/motor_service/command 做簡單測試流程，
+    或訂閱文字 topic，把外部文字命令轉成 service 呼叫。
     """
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('motorA_controller')
 
-        # 參數
-        self.declare_parameter('service_ns', 'ev3A')   # motor_service 所在的 namespace
-        self.declare_parameter('demo_mode',  True)     # True: 自動示範; False: 走 topic 指令
-        self.declare_parameter('cmd_input_topic', 'motor/motorA_cmd_in')  # 非 demo 時，從這裡接字串
+        self.declare_parameter('service_ns', '')
+        self.declare_parameter('demo_mode', True)
+        self.declare_parameter('cmd_input_topic', '')
 
-        ns   = self.get_parameter('service_ns').get_parameter_value().string_value
-        demo = self.get_parameter('demo_mode').get_parameter_value().bool_value
+        ns: str   = self.get_parameter('service_ns').get_parameter_value().string_value
+        demo: bool = self.get_parameter('demo_mode').get_parameter_value().bool_value
 
-        # 組合服務名稱
-        srv_name = '/{}/motor_service/command'.format(ns)
+        srv_name = f'/{ns}/motor_service/command' if ns else '/motor_service/command'
         self.cli = self.create_client(MotorCommand, srv_name)
 
         while not self.cli.wait_for_service(timeout_sec=0.5):
-            self.get_logger().info('Waiting for service {}'.format(srv_name))
+            self.get_logger().info(f'Waiting for service {srv_name}')
 
-        # 模式切換
         if demo:
             self.get_logger().info('[MotorAController] demo mode ON')
             self.step = 0
@@ -38,11 +35,11 @@ class MotorAController(Node):
             self.timer = self.create_timer(0.2, self.demo_tick)
         else:
             topic_in = self.get_parameter('cmd_input_topic').get_parameter_value().string_value
-            self.get_logger().info('[MotorAController] listen "{}" and call service'.format(topic_in))
+            self.get_logger().info(f'[MotorAController] listen "{topic_in}" and call service')
             self.sub_in = self.create_subscription(String, topic_in, self.on_text_cmd, 10)
 
-    # --------- demo 流程（簡單測試）---------
-    def demo_tick(self):
+    # --------- demo 流程 ---------
+    def demo_tick(self) -> None:
         now = time.time()
         if self.step == 0:
             self.call_cmd('duty', motor_id=0, v1=50, v2=0)
@@ -73,11 +70,11 @@ class MotorAController(Node):
                 self.step = 6
 
     # --------- 把文字命令轉成 service 呼叫 ---------
-    def on_text_cmd(self, msg: String):
+    def on_text_cmd(self, msg: String) -> None:
         txt = msg.data.strip()
-        self.get_logger().info('[INPUT] {}'.format(txt))
+        self.get_logger().info(f'[INPUT] {txt}')
         parts = txt.split()
-        if len(parts) == 0:
+        if not parts:
             return
         cmd = parts[0].lower()
 
@@ -89,12 +86,12 @@ class MotorAController(Node):
             elif cmd == 'rel' and len(parts) >= 3:
                 self.call_cmd('rel', motor_id=0, v1=int(parts[1]), v2=int(parts[2]))
             else:
-                self.get_logger().warn('Unknown cmd: {}'.format(txt))
+                self.get_logger().warn(f'Unknown cmd: {txt}')
         except Exception as e:
-            self.get_logger().error('Cmd error: {}'.format(e))
+            self.get_logger().error(f'Cmd error: {e}')
 
     # --------- 服務呼叫 helper ---------
-    def call_cmd(self, mode, motor_id=0, v1=0, v2=0):
+    def call_cmd(self, mode: str, motor_id: int = 0, v1: float = 0, v2: float = 0) -> None:
         req = MotorCommand.Request()
         req.mode = str(mode)
         req.motor_id = int(motor_id)
@@ -105,7 +102,7 @@ class MotorAController(Node):
         rclpy.spin_until_future_complete(self, fut)
         resp = fut.result()
         ok = (resp is not None and resp.success)
-        self.get_logger().info('[CALL] {} m{} ({}, {}) -> {}'.format(mode, motor_id, v1, v2, ok))
+        self.get_logger().info(f'[CALL] {mode} m{motor_id} ({v1}, {v2}) -> {ok}')
 
 def main(args=None):
     rclpy.init(args=args)
@@ -114,8 +111,9 @@ def main(args=None):
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
-    node.destroy_node()
-    rclpy.shutdown()
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

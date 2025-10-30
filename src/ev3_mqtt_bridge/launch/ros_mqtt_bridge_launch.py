@@ -3,6 +3,7 @@ from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 
+# 主機EV3 mqtt 橋接
 def bridge_node(ns, name, ros_sub, mqtt_pub, mqtt_sub, ros_pub):
     return Node(
         package='ev3_mqtt_bridge',
@@ -22,7 +23,7 @@ def bridge_node(ns, name, ros_sub, mqtt_pub, mqtt_sub, ros_pub):
             'ros_pub_topic':  ros_pub,
         }]
     )
-
+# led 控制測試，確認訊息是否互通
 def led_controller_node(ns):
     return Node(
         package='ev3_mqtt_bridge',
@@ -35,7 +36,7 @@ def led_controller_node(ns):
             'ros_status_topic':'led/status_feedback',
         }]
     )
-    
+# 馬達動作模組
 def motor_service_node(ns):
     return Node(
         package='ev3_mqtt_bridge',
@@ -48,7 +49,7 @@ def motor_service_node(ns):
             'ros_status_topic':'motor/motorA_status',
         }]
     )
-
+# 馬達動作指令(demo)
 def motorA_controller_node(ns):
     return Node(
         package='ev3_mqtt_bridge',
@@ -57,8 +58,8 @@ def motorA_controller_node(ns):
         namespace=ns,
         output='screen',
         parameters=[{
-            'service_ns': ns,              # 會去呼叫 /<ns>/motor_service/*
-            'demo_mode':  True,            # False 則走文字 topic 控制
+            'service_ns': ns,
+            'demo_mode':  True,
             'cmd_input_topic': 'motor/motorA_cmd_in',
         }]
     )
@@ -69,7 +70,7 @@ def generate_launch_description():
     password_arg    = DeclareLaunchArgument('password',    default_value='lego')
     broker_port_arg = DeclareLaunchArgument('broker_port', default_value='1883')
 
-    # === EV3A: LED ===
+    # === EV3A: LED === (for test)
     # ROS topics:   /ev3A/led/light_cmd  <->  /ev3A/led/status_feedback
     # MQTT topics:  ev3A/led/light       <->  ev3A/led/status
     bridge_led_A = bridge_node(
@@ -81,7 +82,7 @@ def generate_launch_description():
     )
     led_ctrl_A = led_controller_node('ev3A')
 
-    # === EV3B: LED ===
+    # === EV3B: LED === (for test)
     bridge_led_B = bridge_node(
         ns='ev3B', name='bridge_led',
         ros_sub='led/light_cmd',
@@ -100,7 +101,7 @@ def generate_launch_description():
         mqtt_sub='ev3A/motorA/status',     # EV3A 回報
         ros_pub='motor/motorA_status'
     )
-    # 2) Service provider（把 Service 轉字串到 ROS topic）
+    # 2) Service provider
     motor_service_A = motor_service_node('ev3A')
     # 3) Controller（示範/或轉文字命令→Service 呼叫）
     motorA_ctrl = motorA_controller_node('ev3A')
@@ -108,8 +109,8 @@ def generate_launch_description():
     return LaunchDescription([
             broker_ip_arg, username_arg, password_arg, broker_port_arg,
             # LED
-            bridge_led_A, led_ctrl_A,
-            bridge_led_B, led_ctrl_B,
+            # bridge_led_A, led_ctrl_A,
+            # bridge_led_B, led_ctrl_B,
             # MotorA (ev3A)
             bridge_motorA, motor_service_A, motorA_ctrl,
         ])
