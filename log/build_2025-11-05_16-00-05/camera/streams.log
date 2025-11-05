@@ -1,0 +1,59 @@
+[0.548s] Invoking command in '/home/jacky/Documents/robot_bartender/src/camera': PYTHONPATH=/home/jacky/Documents/robot_bartender/build/camera/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/camera build --build-base /home/jacky/Documents/robot_bartender/build/camera/build install --record /home/jacky/Documents/robot_bartender/build/camera/install.log --single-version-externally-managed install_data
+[0.696s] running egg_info
+[0.696s] creating ../../build/camera/camera.egg-info
+[0.697s] writing ../../build/camera/camera.egg-info/PKG-INFO
+[0.697s] writing dependency_links to ../../build/camera/camera.egg-info/dependency_links.txt
+[0.697s] writing entry points to ../../build/camera/camera.egg-info/entry_points.txt
+[0.697s] writing requirements to ../../build/camera/camera.egg-info/requires.txt
+[0.697s] writing top-level names to ../../build/camera/camera.egg-info/top_level.txt
+[0.697s] writing manifest file '../../build/camera/camera.egg-info/SOURCES.txt'
+[0.698s] reading manifest file '../../build/camera/camera.egg-info/SOURCES.txt'
+[0.698s] writing manifest file '../../build/camera/camera.egg-info/SOURCES.txt'
+[0.698s] running build
+[0.698s] running build_py
+[0.698s] creating /home/jacky/Documents/robot_bartender/build/camera/build
+[0.698s] creating /home/jacky/Documents/robot_bartender/build/camera/build/lib
+[0.699s] creating /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera
+[0.699s] copying camera/undistort.py -> /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera
+[0.699s] copying camera/sobel.py -> /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera
+[0.699s] copying camera/camera_node.py -> /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera
+[0.699s] copying camera/canny.py -> /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera
+[0.699s] copying camera/findLine.py -> /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera
+[0.699s] copying camera/noise.py -> /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera
+[0.699s] copying camera/__init__.py -> /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera
+[0.699s] running install
+[0.699s] running install_lib
+[0.700s] creating /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera
+[0.700s] copying /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera/undistort.py -> /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera
+[0.700s] copying /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera/sobel.py -> /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera
+[0.700s] copying /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera/camera_node.py -> /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera
+[0.700s] copying /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera/canny.py -> /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera
+[0.700s] copying /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera/findLine.py -> /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera
+[0.700s] copying /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera/noise.py -> /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera
+[0.700s] copying /home/jacky/Documents/robot_bartender/build/camera/build/lib/camera/__init__.py -> /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera
+[0.700s] byte-compiling /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera/undistort.py to undistort.cpython-310.pyc
+[0.701s] byte-compiling /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera/sobel.py to sobel.cpython-310.pyc
+[0.701s] byte-compiling /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera/camera_node.py to camera_node.cpython-310.pyc
+[0.702s] byte-compiling /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera/canny.py to canny.cpython-310.pyc
+[0.702s] byte-compiling /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera/findLine.py to findLine.cpython-310.pyc
+[0.703s] byte-compiling /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera/noise.py to noise.cpython-310.pyc
+[0.704s] byte-compiling /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera/__init__.py to __init__.cpython-310.pyc
+[0.704s] running install_data
+[0.704s] creating /home/jacky/Documents/robot_bartender/install/camera/share/ament_index
+[0.704s] creating /home/jacky/Documents/robot_bartender/install/camera/share/ament_index/resource_index
+[0.704s] creating /home/jacky/Documents/robot_bartender/install/camera/share/ament_index/resource_index/packages
+[0.704s] copying resource/camera -> /home/jacky/Documents/robot_bartender/install/camera/share/ament_index/resource_index/packages
+[0.704s] copying package.xml -> /home/jacky/Documents/robot_bartender/install/camera/share/camera
+[0.704s] creating /home/jacky/Documents/robot_bartender/install/camera/share/camera/launch
+[0.704s] copying launch/camera_launch.py -> /home/jacky/Documents/robot_bartender/install/camera/share/camera/launch
+[0.704s] running install_egg_info
+[0.705s] Copying ../../build/camera/camera.egg-info to /home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages/camera-0.0.0-py3.10.egg-info
+[0.706s] running install_scripts
+[0.719s] Installing camera_node script to /home/jacky/Documents/robot_bartender/install/camera/lib/camera
+[0.719s] Installing canny script to /home/jacky/Documents/robot_bartender/install/camera/lib/camera
+[0.719s] Installing findLine script to /home/jacky/Documents/robot_bartender/install/camera/lib/camera
+[0.719s] Installing noise script to /home/jacky/Documents/robot_bartender/install/camera/lib/camera
+[0.719s] Installing sobel script to /home/jacky/Documents/robot_bartender/install/camera/lib/camera
+[0.719s] Installing undistort script to /home/jacky/Documents/robot_bartender/install/camera/lib/camera
+[0.719s] writing list of installed files to '/home/jacky/Documents/robot_bartender/build/camera/install.log'
+[0.735s] Invoked command in '/home/jacky/Documents/robot_bartender/src/camera' returned '0': PYTHONPATH=/home/jacky/Documents/robot_bartender/build/camera/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jacky/Documents/robot_bartender/install/camera/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/camera build --build-base /home/jacky/Documents/robot_bartender/build/camera/build install --record /home/jacky/Documents/robot_bartender/build/camera/install.log --single-version-externally-managed install_data

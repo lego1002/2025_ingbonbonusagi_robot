@@ -11,6 +11,13 @@ class MotorService(Node):
     Service: /<ns>/motor_service/command
     req: mode, motor_id, value1, value2
     動作：轉為 EV3 指令字串，發佈到 ros_cmd_topic（bridge 會轉到 MQTT）
+    字串格式（含 motor_id 前綴）：
+      m{motor_id}:{cmd}
+    例：
+      m0:duty 50
+      m1:rel 90 300
+      m2:run
+    motor_id = -1 代表廣播（不加前綴，EV3 可自行視為全部）
     """
     def __init__(self) -> None:
         super().__init__('motor_service')
@@ -44,10 +51,23 @@ class MotorService(Node):
           - abs  (value1=deg, value2=speed)
         """
         mode = (req.mode or '').strip().lower()
-        motor_id = int(req.motor_id)  # 目前未用；若要多馬達可前綴 m{motor_id}:
-        v1 = float(req.value1)
-        v2 = float(req.value2)
+        try:
+            motor_id = int(req.motor_id)
+        except Exception:
+            res.success = False
+            res.message = 'motor_id must be integer'
+            return res
 
+        # 參數
+        try:
+            v1 = float(req.value1)
+            v2 = float(req.value2)
+        except Exception:
+            res.success = False
+            res.message = 'value1/value2 must be numbers'
+            return res
+
+        # 基本命令字串
         cmd = None
         if mode == 'run':
             cmd = 'run'
@@ -71,10 +91,19 @@ class MotorService(Node):
             res.message = f'Unknown mode "{mode}"'
             return res
 
-        # 若要支援多馬達：cmd = f'm{motor_id}:{cmd}'
-        self.send_cmd(cmd)
+        # === motor_id 前綴 ===
+        # 規則：
+        #   motor_id >= 0 → 'm{motor_id}:{cmd}'
+        #   motor_id == -1 → 視為廣播（不加前綴，EV3 可自行解讀為全部）
+        if motor_id >= 0:
+            full_cmd = f'm{motor_id}:{cmd}'
+        else:
+            # 廣播；若你希望明確全體，可改成 'mall:{cmd}' 並在 EV3 解析
+            full_cmd = cmd
+
+        self.send_cmd(full_cmd)
         res.success = True
-        res.message = f'sent: {cmd}'
+        res.message = f'sent: {full_cmd}'
         return res
 
 def main(args=None):
@@ -90,3 +119,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+

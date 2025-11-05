@@ -10,7 +10,7 @@ class RosMqttBridge(Node):
 
         # --- 宣告參數（由 launch 傳入） ---
         self.declare_parameter('broker_ip','')
-        self.declare_parameter('broker_port','')
+        self.declare_parameter('broker_port', 1883)
         self.declare_parameter('username','')
         self.declare_parameter('password','')
         self.declare_parameter('mqtt_pub_topic','')   # ROS → MQTT

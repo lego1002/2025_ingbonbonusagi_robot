@@ -4,3 +4,5 @@ ev3_interfaces.egg-info/PKG-INFO
 ev3_interfaces.egg-info/SOURCES.txt
 ev3_interfaces.egg-info/dependency_links.txt
 ev3_interfaces.egg-info/top_level.txt
+ev3_interfaces/srv/__init__.py
+ev3_interfaces/srv/_motor_command.py

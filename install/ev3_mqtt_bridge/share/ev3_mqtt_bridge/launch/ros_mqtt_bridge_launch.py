@@ -49,7 +49,7 @@ def motor_service_node(ns):
             'ros_status_topic':'motor/motorA_status',
         }]
     )
-# 馬達動作指令(demo)
+# ----馬達動作指令----
 def motorA_controller_node(ns):
     return Node(
         package='ev3_mqtt_bridge',
@@ -61,6 +61,22 @@ def motorA_controller_node(ns):
             'service_ns': ns,
             'demo_mode':  True,
             'cmd_input_topic': 'motor/motorA_cmd_in',
+            'motor_id': 1,
+        }]
+    )
+
+def motorB_controller_node(ns):
+    return Node(
+        package='ev3_mqtt_bridge',
+        executable='motorB_controller',
+        name='motorB_controller',
+        namespace=ns,
+        output='screen',
+        parameters=[{
+            'service_ns': ns,
+            'demo_mode':  True,
+            'cmd_input_topic': 'motor/motorB_cmd_in',
+            'motor_id': 2,
         }]
     )
 
@@ -106,11 +122,25 @@ def generate_launch_description():
     # 3) Controller（示範/或轉文字命令→Service 呼叫）
     motorA_ctrl = motorA_controller_node('ev3A')
     
+
+    bridge_motorB = bridge_node(
+        ns='ev3A', name='bridge_motorB',
+        ros_sub='motor/motorB_cmd',        # ROS→MQTT 指令
+        mqtt_pub='ev3A/motorB/cmd',        # EV3A 端要訂閱這個
+        mqtt_sub='ev3A/motorB/status',     # EV3A 回報
+        ros_pub='motor/motorB_status'
+    )
+    motor_service_B = motor_service_node('ev3A')
+    motorB_ctrl = motorB_controller_node('ev3A')
+    
     return LaunchDescription([
             broker_ip_arg, username_arg, password_arg, broker_port_arg,
             # LED
             # bridge_led_A, led_ctrl_A,
             # bridge_led_B, led_ctrl_B,
+            
             # MotorA (ev3A)
             bridge_motorA, motor_service_A, motorA_ctrl,
+            # MotorA (ev3A)
+            bridge_motorB, motor_service_B, motorB_ctrl,
         ])
