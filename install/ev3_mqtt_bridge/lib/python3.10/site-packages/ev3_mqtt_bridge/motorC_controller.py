@@ -7,15 +7,15 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from ev3_interfaces.srv import MotorCommand
 
-class MotorAController(Node):
+class MotorCController(Node):
     """
-    MotorA Controller:
+    MotorC Controller:
       - demo_mode=True  → 自動跑測試動作 (Duty → Run → Stop → Rel ±90)
       - demo_mode=False → 實際控制模式 (未來可接收 JSON / 指令 topic)
     """
 
     def __init__(self) -> None:
-        super().__init__('motorA_controller')
+        super().__init__('motorB_controller')
 
         # ------------------------
         # 參數宣告區
@@ -51,7 +51,7 @@ class MotorAController(Node):
     # =========================================================
     def init_demo_mode(self):
         """初始化 Demo 模式的狀態機"""
-        self.get_logger().info(f'[MotorAController] DEMO MODE ON (motor_id={self.motor_id})')
+        self.get_logger().info(f'[MotorCController] DEMO MODE ON (motor_id={self.motor_id})')
         self.step = 0
         self.phase_t0 = time.time()
         self.sent_in_step = False
@@ -116,7 +116,7 @@ class MotorAController(Node):
     def init_runtime_mode(self):
         """初始化實際控制模式（未來接 JSON 或指令 topic）"""
         topic_in = self.get_parameter('cmd_input_topic').get_parameter_value().string_value
-        self.get_logger().info(f'[MotorAController] RUNTIME MODE (listen "{topic_in}" | motor_id={self.motor_id})')
+        self.get_logger().info(f'[MotorCController] RUNTIME MODE (listen "{topic_in}" | motor_id={self.motor_id})')
 
         # 範例：這裡之後可以改為訂閱 JSON 命令或上層規劃節點
         # 現在先保留成文字 topic
@@ -167,7 +167,7 @@ class MotorAController(Node):
 # =========================================================
 def main(args=None):
     rclpy.init(args=args)
-    node = MotorAController()
+    node = MotorCController()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
