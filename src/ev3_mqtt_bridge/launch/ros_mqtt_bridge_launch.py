@@ -134,7 +134,7 @@ def generate_launch_description():
         ros_sub='motor/motorA_cmd',        # ROS→MQTT 指令
         mqtt_pub='ev3A/motorA/cmd',        # EV3A 端要訂閱這個
         mqtt_sub='ev3A/motorA/status',     # EV3A 回報
-        ros_pub='motor/motorA_status'
+        ros_pub='motor/motorA_status'      # MQTT→ROS 指令
     )
     # 2) Service provider
     motor_service_A = motor_service_node('ev3A')
@@ -146,9 +146,9 @@ def generate_launch_description():
     # ===============
     bridge_motorB = bridge_node(
         ns='ev3A', name='bridge_motorB',
-        ros_sub='motor/motorB_cmd',        # ROS→MQTT 指令
-        mqtt_pub='ev3A/motorB/cmd',        # EV3A 端要訂閱這個
-        mqtt_sub='ev3A/motorB/status',     # EV3A 回報
+        ros_sub='motor/motorB_cmd',
+        mqtt_pub='ev3A/motorB/cmd',
+        mqtt_sub='ev3A/motorB/status',
         ros_pub='motor/motorB_status'
     )
     motor_service_B = motor_service_node('ev3A')
@@ -159,9 +159,9 @@ def generate_launch_description():
     # ===============
     bridge_motorC = bridge_node(
         ns='ev3A', name='bridge_motorC',
-        ros_sub='motor/motorC_cmd',        # ROS→MQTT 指令
-        mqtt_pub='ev3A/motorC/cmd',        # EV3A 端要訂閱這個
-        mqtt_sub='ev3A/motorC/status',     # EV3A 回報
+        ros_sub='motor/motorC_cmd',
+        mqtt_pub='ev3A/motorC/cmd',
+        mqtt_sub='ev3A/motorC/status',
         ros_pub='motor/motorC_status'
     )
     motor_service_C = motor_service_node('ev3A')
@@ -169,7 +169,7 @@ def generate_launch_description():
     
     return LaunchDescription([
             broker_ip_arg, username_arg, password_arg, broker_port_arg,
-            # LED
+            # LED (test communication)
             # bridge_led_A, led_ctrl_A,
             # bridge_led_B, led_ctrl_B,
             
@@ -179,6 +179,4 @@ def generate_launch_description():
             bridge_motorB, motor_service_B, motorB_ctrl,
             # MotorC (ev3A)
             bridge_motorC, motor_service_C, motorC_ctrl,
-            
-            
         ])

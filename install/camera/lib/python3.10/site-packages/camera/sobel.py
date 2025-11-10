@@ -17,12 +17,12 @@ class SobelEdgeDetectionNode(Node):
 
         # 訂閱 /camera/image_rect（原始矯正後影像）
         self.sub = self.create_subscription(
-            Image, '/camera/image_rect', self.image_callback, 10
+            Image, '/camera/image_raw', self.image_callback, 10
         )
         # 發佈邊緣圖（不回寫 rect）
         self.pub = self.create_publisher(Image, '/camera/image_edge', 10)
 
-        self.get_logger().info("Sobel邊緣檢測節點已啟動 (訂閱 /camera/image_rect)")
+        self.get_logger().info("Sobel邊緣檢測節點已啟動 (訂閱 /camera/image_raw)")
 
         # 視窗
         cv2.namedWindow("Sobel Edge Detection", cv2.WINDOW_NORMAL)

@@ -10,7 +10,7 @@ class CannyEdgeDetectionNode(Node):
         super().__init__('canny_edge_detection_node')
 
         self.bridge = CvBridge()
-        self.sub = self.create_subscription(Image, '/camera/image_rect', self.image_callback, 10)
+        self.sub = self.create_subscription(Image, '/camera/image_raw', self.image_callback, 10)
 
         self.get_logger().info("Canny邊緣檢測節點已啟動")
         
