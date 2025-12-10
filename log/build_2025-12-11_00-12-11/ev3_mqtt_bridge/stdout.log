@@ -1,0 +1,32 @@
+running egg_info
+writing ../../build/ev3_mqtt_bridge/ev3_mqtt_bridge.egg-info/PKG-INFO
+writing dependency_links to ../../build/ev3_mqtt_bridge/ev3_mqtt_bridge.egg-info/dependency_links.txt
+writing entry points to ../../build/ev3_mqtt_bridge/ev3_mqtt_bridge.egg-info/entry_points.txt
+writing requirements to ../../build/ev3_mqtt_bridge/ev3_mqtt_bridge.egg-info/requires.txt
+writing top-level names to ../../build/ev3_mqtt_bridge/ev3_mqtt_bridge.egg-info/top_level.txt
+reading manifest file '../../build/ev3_mqtt_bridge/ev3_mqtt_bridge.egg-info/SOURCES.txt'
+writing manifest file '../../build/ev3_mqtt_bridge/ev3_mqtt_bridge.egg-info/SOURCES.txt'
+running build
+running build_py
+copying ev3_mqtt_bridge/motorD_controller.py -> /home/jacky/Documents/robot_bartender/build/ev3_mqtt_bridge/build/lib/ev3_mqtt_bridge
+copying ev3_mqtt_bridge/motorE_controller.py -> /home/jacky/Documents/robot_bartender/build/ev3_mqtt_bridge/build/lib/ev3_mqtt_bridge
+running install
+running install_lib
+copying /home/jacky/Documents/robot_bartender/build/ev3_mqtt_bridge/build/lib/ev3_mqtt_bridge/motorD_controller.py -> /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/python3.10/site-packages/ev3_mqtt_bridge
+copying /home/jacky/Documents/robot_bartender/build/ev3_mqtt_bridge/build/lib/ev3_mqtt_bridge/motorE_controller.py -> /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/python3.10/site-packages/ev3_mqtt_bridge
+byte-compiling /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/python3.10/site-packages/ev3_mqtt_bridge/motorD_controller.py to motorD_controller.cpython-310.pyc
+byte-compiling /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/python3.10/site-packages/ev3_mqtt_bridge/motorE_controller.py to motorE_controller.cpython-310.pyc
+running install_data
+running install_egg_info
+removing '/home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/python3.10/site-packages/ev3_mqtt_bridge-0.0.0-py3.10.egg-info' (and everything under it)
+Copying ../../build/ev3_mqtt_bridge/ev3_mqtt_bridge.egg-info to /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/python3.10/site-packages/ev3_mqtt_bridge-0.0.0-py3.10.egg-info
+running install_scripts
+Installing led_controller script to /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/ev3_mqtt_bridge
+Installing motorA_controller script to /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/ev3_mqtt_bridge
+Installing motorB_controller script to /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/ev3_mqtt_bridge
+Installing motorC_controller script to /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/ev3_mqtt_bridge
+Installing motorD_controller script to /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/ev3_mqtt_bridge
+Installing motorE_controller script to /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/ev3_mqtt_bridge
+Installing motor_action script to /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/ev3_mqtt_bridge
+Installing ros_mqtt_bridge script to /home/jacky/Documents/robot_bartender/install/ev3_mqtt_bridge/lib/ev3_mqtt_bridge
+writing list of installed files to '/home/jacky/Documents/robot_bartender/build/ev3_mqtt_bridge/install.log'

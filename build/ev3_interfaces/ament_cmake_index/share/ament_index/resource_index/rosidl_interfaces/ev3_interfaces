@@ -1,3 +1,5 @@
+action/MotorCommand.action
+action/MotorCommand.idl
 srv/MotorCommand.idl
 srv/MotorCommand.srv
 srv/MotorCommand_Request.msg

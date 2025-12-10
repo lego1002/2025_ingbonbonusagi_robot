@@ -1,0 +1,32 @@
+// generated from rosidl_adapter/resource/action.idl.em
+// with input from ev3_interfaces/action/MotorCommand.action
+// generated code does not contain a copyright notice
+
+
+module ev3_interfaces {
+  module action {
+    @verbatim (language="comment", text=
+      "Goal")
+    struct MotorCommand_Goal {
+      string mode;
+
+      int32 motor_id;
+
+      float value1;
+
+      float value2;
+    };
+    @verbatim (language="comment", text=
+      "Result")
+    struct MotorCommand_Result {
+      boolean success;
+
+      string message;
+    };
+    @verbatim (language="comment", text=
+      "Feedback")
+    struct MotorCommand_Feedback {
+      string status;
+    };
+  };
+};

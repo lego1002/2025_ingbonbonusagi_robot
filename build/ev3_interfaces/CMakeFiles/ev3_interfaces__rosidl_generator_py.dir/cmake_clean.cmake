@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/ev3_interfaces__rosidl_generator_py.dir/rosidl_generator_py/ev3_interfaces/action/_motor_command_s.c.o"
+  "CMakeFiles/ev3_interfaces__rosidl_generator_py.dir/rosidl_generator_py/ev3_interfaces/action/_motor_command_s.c.o.d"
   "CMakeFiles/ev3_interfaces__rosidl_generator_py.dir/rosidl_generator_py/ev3_interfaces/srv/_motor_command_s.c.o"
   "CMakeFiles/ev3_interfaces__rosidl_generator_py.dir/rosidl_generator_py/ev3_interfaces/srv/_motor_command_s.c.o.d"
   "rosidl_generator_py/ev3_interfaces/libev3_interfaces__rosidl_generator_py.pdb"

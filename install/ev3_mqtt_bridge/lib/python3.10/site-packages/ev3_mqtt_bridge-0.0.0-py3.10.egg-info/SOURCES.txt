@@ -13,7 +13,9 @@ ev3_mqtt_bridge/led_controller.py
 ev3_mqtt_bridge/motorA_controller.py
 ev3_mqtt_bridge/motorB_controller.py
 ev3_mqtt_bridge/motorC_controller.py
-ev3_mqtt_bridge/motor_service.py
+ev3_mqtt_bridge/motorD_controller.py
+ev3_mqtt_bridge/motorE_controller.py
+ev3_mqtt_bridge/motor_action.py
 ev3_mqtt_bridge/ros_mqtt_bridge.py
 launch/ros_mqtt_bridge_launch.py
 resource/ev3_mqtt_bridge

@@ -4,167 +4,196 @@
 import time
 import rclpy
 from rclpy.node import Node
+from rclpy.action import ActionClient
 from std_msgs.msg import String
-from ev3_interfaces.srv import MotorCommand
+from ev3_interfaces.action import MotorCommand
+
 
 class MotorBController(Node):
     """
-    MotorB Controller:
-      - demo_mode=True  → 自動跑測試動作 (Duty → Run → Stop → Rel ±90)
-      - demo_mode=False → 實際控制模式 (未來可接收 JSON / 指令 topic)
-    """
+    MotorB Controller (Action 版)
 
+    demo_mode=True 時的流程（測試 rel/abs/home 正確性）：
+      0) reset                → 把目前位置當作 0
+      1) abs  +45 * ratio     → 軸目標 +45 度
+      2) rel  -45 * ratio     → 相對 -45 度（應回到 0）
+      3) abs  -45 * ratio     → 軸目標 -45 度
+      4) rel  +45 * ratio     → 相對 +45 度（應回到 0）
+      5) abs  +60 * ratio     → 軸目標 +60 度
+      6) home                 → 回到 0（也就是一開始 reset 的位姿）
+
+    ratio 用來把「軸角度」換成「馬達角度」：
+      motor_deg = shaft_deg * ratio
+    """
     def __init__(self) -> None:
         super().__init__('motorB_controller')
 
-        # ------------------------
-        # 參數宣告區
-        # ------------------------
-        self.declare_parameter('service_ns', '')
         self.declare_parameter('demo_mode', True)
         self.declare_parameter('cmd_input_topic', '')
-        self.declare_parameter('motor_id', 0)   # 指定要控制哪一顆（預設 0）
+        self.declare_parameter('motor_id', 1)
+        self.declare_parameter('action_name', 'motorB_action')
+        self.declare_parameter('ratio', 1.0)  # ★ 齒輪比（可在 launch 裡調）
 
-        ns: str     = self.get_parameter('service_ns').get_parameter_value().string_value
-        demo: bool  = self.get_parameter('demo_mode').get_parameter_value().bool_value
-        self.motor_id: int = int(self.get_parameter('motor_id').get_parameter_value().integer_value)
+        self.demo = self.get_parameter('demo_mode').get_parameter_value().bool_value
+        self.motor_id = int(self.get_parameter('motor_id').get_parameter_value().integer_value)
+        self.action_name = self.get_parameter('action_name').get_parameter_value().string_value
+        self.ratio = self.get_parameter('ratio').get_parameter_value().double_value
 
-        # ------------------------
-        # 服務設定
-        # ------------------------
-        srv_name = f'/{ns}/command' if ns else '/command'
-        self.cli = self.create_client(MotorCommand, srv_name)
+        # ActionClient 名稱相對於 namespace
+        self.client = ActionClient(self, MotorCommand, self.action_name)
 
-        while not self.cli.wait_for_service(timeout_sec=0.5):
-            self.get_logger().info(f'Waiting for service {srv_name}')
+        self.get_logger().info(
+            f'[MotorBController] connect action: {self.get_namespace()}/{self.action_name}, '
+            f'motor_id={self.motor_id}, ratio={self.ratio}'
+        )
 
-        # ------------------------
-        # 模式切換
-        # ------------------------
-        if demo:
-            self.init_demo_mode()
+        if not self.client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().warn('Action server not available yet...')
+
+        if self.demo:
+            self.init_demo()
         else:
-            self.init_runtime_mode()
+            self.init_runtime()
 
-    # =========================================================
-    # === DEMO 模式 (demo_mode=True)
-    # =========================================================
-    def init_demo_mode(self):
-        """初始化 Demo 模式的狀態機"""
-        self.get_logger().info(f'[MotorBController] DEMO MODE ON (motor_id={self.motor_id})')
+    # ========== Demo ==========
+    def init_demo(self):
+        self.get_logger().info(f'[Demo] ON (motor_id={self.motor_id}, ratio={self.ratio})')
         self.step = 0
         self.phase_t0 = time.time()
-        self.sent_in_step = False
-        # Demo 模式用 timer 定期呼叫
-        self.timer = self.create_timer(0.5, self.demo_tick)
+        self.sent = False
+        self.timer = self.create_timer(0.2, self.demo_tick)  # demo tick 稍微快一點也沒關係
 
-    # --------- 小工具：每階段只送一次 ---------
-    def send_once_in_step(self, fn):
-        if not self.sent_in_step:
-            fn()
-            self.sent_in_step = True
+    def _deg(self, shaft_deg: float) -> float:
+        """把軸角度轉成馬達角度 = 軸角度 * ratio"""
+        return float(shaft_deg * self.ratio)
 
-    def goto_next_step(self):
-        self.step += 1
-        self.sent_in_step = False
-        self.phase_t0 = time.time()
+    def send_goal(self, mode, v1=0.0, v2=0.0):
+        goal = MotorCommand.Goal()
+        goal.mode = str(mode)
+        goal.motor_id = int(self.motor_id)
+        goal.value1 = float(v1)
+        goal.value2 = float(v2)
 
-    # --------- Demo 流程 ---------
-    def demo_tick(self) -> None:
+        self.get_logger().info(f'[GOAL] {mode} m{goal.motor_id} ({goal.value1}, {goal.value2})')
+
+        return self.client.send_goal_async(
+            goal,
+            feedback_callback=self.on_feedback
+        )
+
+    def on_feedback(self, fb):
+        self.get_logger().debug(f'[FB] {fb.feedback.status}')
+
+    def demo_tick(self):
         now = time.time()
-        mid = self.motor_id
 
+        # Step 0: reset（把目前位置當成 0）
         if self.step == 0:
-            # duty 40
-            self.send_once_in_step(lambda: self.call_cmd('duty', motor_id=mid, v1=40, v2=0))
-            self.goto_next_step()
+            if not self.sent:
+                # reset 為立即完成型，不用等 result
+                _ = self.send_goal('reset', 0, 0)
+                self.sent = True
+                self.phase_t0 = now
+                self.get_logger().info('[Demo] Step 0: reset (set current pos as 0)')
+            else:
+                # 稍微等一下，確保 EV3 收到
+                if now - self.phase_t0 > 0.3:
+                    self.step = 1
+                    self.sent = False
 
+        # Step 1: abs +45 * ratio
         elif self.step == 1:
-            # run
-            self.send_once_in_step(lambda: self.call_cmd('run', motor_id=mid))
-            if now - self.phase_t0 >= 2.0:
-                self.goto_next_step()
-
+            if not self.sent:
+                motor_deg = self._deg(5.0)
+                self.goal_future = self.send_goal('abs', motor_deg, 50)
+                self.goal_future.add_done_callback(self._on_result)
+                self.sent = True
+                self.get_logger().info('[Demo] Step 1: abs +45° (x ratio)')
+        
+        # Step 2: abs -45 * ratio
         elif self.step == 2:
-            # stop
-            self.send_once_in_step(lambda: self.call_cmd('stop', motor_id=mid))
-            if now - self.phase_t0 >= 0.2:
-                self.goto_next_step()
-
+            if not self.sent:
+                motor_deg = self._deg(-5.0)
+                self.goal_future = self.send_goal('abs', motor_deg, 50)
+                self.goal_future.add_done_callback(self._on_result)
+                self.sent = True
+                self.get_logger().info('[Demo] Step 3: abs -45° (x ratio)')
+        
+        # Step 3: rel +45 * ratio
         elif self.step == 3:
-            # rel +40
-            self.send_once_in_step(lambda: self.call_cmd('rel', motor_id=mid, v1=40, v2=300))
-            if now - self.phase_t0 >= 1.5:
-                self.goto_next_step()
+            if not self.sent:
+                motor_deg = self._deg(10)
+                self.goal_future = self.send_goal('rel', motor_deg, 50)
+                self.goal_future.add_done_callback(self._on_result)
+                self.sent = True
+                self.get_logger().info('[Demo] Step 4: rel +45° (x ratio) → 應回到 0')
 
+        # Step 4: home（回到 0）
         elif self.step == 4:
-            # rel -40
-            self.send_once_in_step(lambda: self.call_cmd('rel', motor_id=mid, v1=-40, v2=300))
-            if now - self.phase_t0 >= 1.5:
-                self.goto_next_step()
+            if not self.sent:
+                # home: value1 當 speed，用 300；不需要角度
+                self.goal_future = self.send_goal('home', 50, 0)
+                self.goal_future.add_done_callback(self._on_result)
+                self.sent = True
+                self.get_logger().info('[Demo] Step 6: home (back to 0)')
 
+        # Step 5: end
         elif self.step == 5:
-            # stop + 結束
-            self.send_once_in_step(lambda: self.call_cmd('stop', motor_id=mid))
-            self.get_logger().info('[Demo] done')
-            self.destroy_timer(self.timer)
-            self.step = 6
+            if not self.sent:
+                self.get_logger().info('[Demo] done (reset → abs/rel test → home)')
+                self.destroy_timer(self.timer)
+                self.sent = True  # 防止重複 log
 
-    # =========================================================
-    # === 實際上機模式 (demo_mode=False)
-    # =========================================================
-    def init_runtime_mode(self):
-        """初始化實際控制模式（未來接 JSON 或指令 topic）"""
+    def _on_result(self, goal_handle_future):
+        try:
+            goal_handle = goal_handle_future.result()
+            result_future = goal_handle.get_result_async()
+
+            def _done(rfut):
+                result = rfut.result().result
+                self.get_logger().info(
+                    f'[RESULT] success={result.success}, msg="{result.message}"'
+                )
+                # 下一步
+                self.step += 1
+                self.sent = False
+
+            result_future.add_done_callback(_done)
+        except Exception as e:
+            self.get_logger().error(f'Goal error: {e}')
+            self.step += 1
+            self.sent = False
+
+    # ========== Runtime (demo_mode=False) ==========
+    def init_runtime(self):
         topic_in = self.get_parameter('cmd_input_topic').get_parameter_value().string_value
-        self.get_logger().info(f'[MotorBController] RUNTIME MODE (listen "{topic_in}" | motor_id={self.motor_id})')
+        self.get_logger().info(
+            f'[Runtime] listen "{topic_in}" (motor_id={self.motor_id}, ratio={self.ratio})'
+        )
+        self.sub = self.create_subscription(String, topic_in, self.on_text_cmd, 10)
 
-        # 範例：這裡之後可以改為訂閱 JSON 命令或上層規劃節點
-        # 現在先保留成文字 topic
-        self.sub_in = self.create_subscription(String, topic_in, self.on_text_cmd, 10)
-
-        # TODO:
-        # - 未來加入 JSON 解析（如 {"cmd":"rel","value1":90,"value2":300}）
-        # - 可支援多 motor_id 控制
-        # - 可依照任務序列自動排程
-
-    # =========================================================
-    # === 共用功能
-    # =========================================================
-    def on_text_cmd(self, msg: String) -> None:
-        txt = msg.data.strip()
-        self.get_logger().info(f'[INPUT] {txt}')
+    def on_text_cmd(self, msg: String):
+        txt = (msg.data or '').strip()
         parts = txt.split()
         if not parts:
             return
         cmd = parts[0].lower()
-        mid = self.motor_id
-
         try:
             if cmd in ('run', 'stop', 'reset'):
-                self.call_cmd(cmd, motor_id=mid)
+                self.send_goal(cmd)
             elif cmd == 'duty' and len(parts) >= 2:
-                self.call_cmd('duty', motor_id=mid, v1=int(parts[1]), v2=0)
-            elif cmd == 'rel' and len(parts) >= 3:
-                self.call_cmd('rel', motor_id=mid, v1=int(parts[1]), v2=int(parts[2]))
-            elif cmd == 'abs' and len(parts) >= 3:
-                self.call_cmd('abs', motor_id=mid, v1=int(parts[1]), v2=int(parts[2]))
+                self.send_goal('duty', float(parts[1]), 0)
+            elif cmd in ('rel', 'abs') and len(parts) >= 3:
+                # 這裡假設外部送進來的就是「馬達角度」，不再乘 ratio
+                self.send_goal(cmd, float(parts[1]), float(parts[2]))
+            elif cmd == 'home':
+                self.send_goal('home', 300, 0)
             else:
                 self.get_logger().warn(f'Unknown cmd: {txt}')
         except Exception as e:
-            self.get_logger().error(f'Cmd error: {e}')
+            self.get_logger().error(f'parse error: {e}')
 
-    def call_cmd(self, mode: str, motor_id: int = 0, v1: float = 0, v2: float = 0) -> None:
-        req = MotorCommand.Request()
-        req.mode = str(mode)
-        req.motor_id = int(motor_id)
-        req.value1 = float(v1)
-        req.value2 = float(v2)
-        self.cli.call_async(req)   # 非阻塞
-        self.get_logger().info(f'[CALL] {mode} m{motor_id} ({v1}, {v2})')
 
-# =========================================================
-# === main
-# =========================================================
 def main(args=None):
     rclpy.init(args=args)
     node = MotorBController()
@@ -175,6 +204,7 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
