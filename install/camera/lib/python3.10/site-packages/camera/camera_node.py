@@ -5,11 +5,40 @@ import time
 import threading
 import subprocess
 import shutil
+import os
+import sys
+import contextlib
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge
+
+
+@contextlib.contextmanager
+def suppress_stderr():
+    """
+    暫時把整個行程的 stderr 重導到 /dev/null。
+    用來吃掉 libjpeg 的 'Corrupt JPEG data ...' 訊息。
+    注意：這段期間其他 C 函式寫到 stderr 也會被吃掉。
+    """
+    try:
+        fd = sys.stderr.fileno()
+    except Exception:
+        # 沒有標準錯誤（很少見），直接不做事
+        yield
+        return
+
+    saved = os.dup(fd)
+    try:
+        with open(os.devnull, 'w') as devnull:
+            os.dup2(devnull.fileno(), fd)
+            yield
+    finally:
+        os.dup2(saved, fd)
+        os.close(saved)
+
 
 class CameraNode(Node):
     def __init__(self):
@@ -74,7 +103,9 @@ class CameraNode(Node):
         fps_rep = self.cap.get(cv2.CAP_PROP_FPS)
         fcc = int(self.cap.get(cv2.CAP_PROP_FOURCC))
         fmt = "".join([chr((fcc >> (8*i)) & 0xFF) for i in range(4)])
-        self.get_logger().info(f"OpenCV 回報: {w}x{h} @ {fps_rep:.2f}fps, FOURCC={fmt}, buffer={self.buffersize}")
+        self.get_logger().info(
+            f"OpenCV 回報: {w}x{h} @ {fps_rep:.2f}fps, FOURCC={fmt}, buffer={self.buffersize}"
+        )
 
         if self.show_window:
             cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
@@ -97,9 +128,13 @@ class CameraNode(Node):
 
     # ========== 抓取執行緒 ==========
     def _grab_loop(self):
-        """read() 直接取幀，僅保留最新幀"""
+        """
+        read() 直接取幀，僅保留最新幀。
+        讀取時暫時關掉 stderr，吃掉 libjpeg 的 Corrupt JPEG data 訊息。
+        """
         while self._grab_running:
-            ret, frame = self.cap.read()
+            with suppress_stderr():
+                ret, frame = self.cap.read()
             if not ret:
                 time.sleep(0.001)
                 continue
@@ -111,8 +146,10 @@ class CameraNode(Node):
         try:
             self.get_logger().info("$ " + " ".join(cmd))
             r = subprocess.run(cmd, capture_output=True, text=True)
-            if r.stdout.strip(): self.get_logger().info(r.stdout.strip())
-            if r.stderr.strip(): self.get_logger().info(r.stderr.strip())
+            if r.stdout.strip():
+                self.get_logger().info(r.stdout.strip())
+            if r.stderr.strip():
+                self.get_logger().info(r.stderr.strip())
         except FileNotFoundError:
             self.get_logger().warn("找不到 v4l2-ctl，請先安裝： sudo apt install v4l-utils")
         except Exception as e:
@@ -123,26 +160,39 @@ class CameraNode(Node):
             self.get_logger().warn("未安裝 v4l2-ctl，跳過硬體層設定")
             return
         # 1) 像素格式/解析度（MJPG）
-        self.run_cmd(["v4l2-ctl", "-d", self.device, "--set-fmt-video",
-                      f"width={self.W},height={self.H},pixelformat=MJPG"])
+        self.run_cmd([
+            "v4l2-ctl", "-d", self.device, "--set-fmt-video",
+            f"width={self.W},height={self.H},pixelformat=MJPG"
+        ])
         # 2) FPS
         self.run_cmd(["v4l2-ctl", "-d", self.device, "--set-parm", str(self.FPS_REQ)])
         # 3) 曝光（手動 or 自動）
         if self.expo_manual:
             self.run_cmd(["v4l2-ctl", "-d", self.device, "--set-ctrl", "auto_exposure=1"])
-            self.run_cmd(["v4l2-ctl", "-d", self.device, "--set-ctrl",
-                          f"exposure_time_absolute={int(self.expo_abs)}"])
+            self.run_cmd([
+                "v4l2-ctl", "-d", self.device, "--set-ctrl",
+                f"exposure_time_absolute={int(self.expo_abs)}"
+            ])
         else:
             self.run_cmd(["v4l2-ctl", "-d", self.device, "--set-ctrl", "auto_exposure=3"])
         # 4) 關動態降幀、WB/AF
-        self.run_cmd(["v4l2-ctl", "-d", self.device, "--set-ctrl",
-                      f"exposure_dynamic_framerate={1 if self.dynamic_fps else 0}"])
-        self.run_cmd(["v4l2-ctl", "-d", self.device, "--set-ctrl",
-                      f"white_balance_automatic={1 if self.awb_auto else 0}"])
-        self.run_cmd(["v4l2-ctl", "-d", self.device, "--set-ctrl",
-                      f"focus_automatic_continuous={1 if self.af_auto else 0}"])
+        self.run_cmd([
+            "v4l2-ctl", "-d", self.device, "--set-ctrl",
+            f"exposure_dynamic_framerate={1 if self.dynamic_fps else 0}"
+        ])
+        self.run_cmd([
+            "v4l2-ctl", "-d", self.device, "--set-ctrl",
+            f"white_balance_automatic={1 if self.awb_auto else 0}"
+        ])
+        self.run_cmd([
+            "v4l2-ctl", "-d", self.device, "--set-ctrl",
+            f"focus_automatic_continuous={1 if self.af_auto else 0}"
+        ])
         # 檢視
-        self.run_cmd(["v4l2-ctl", "-d", self.device, "--get-fmt-video", "--get-parm", "--list-ctrls"])
+        self.run_cmd([
+            "v4l2-ctl", "-d", self.device, "--get-fmt-video",
+            "--get-parm", "--list-ctrls"
+        ])
         self.get_logger().info("✅ V4L2 參數設定完成")
 
     # ========== 發布 ==========
@@ -191,6 +241,7 @@ def main(args=None):
         if node:
             node.destroy_node()
         rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

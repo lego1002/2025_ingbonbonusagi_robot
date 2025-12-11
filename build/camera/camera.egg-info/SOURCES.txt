@@ -12,6 +12,8 @@ camera/__init__.py
 camera/camera_node.py
 camera/canny.py
 camera/findLine.py
+camera/liquid_level.py
+camera/liquid_level_adj.py
 camera/noise.py
 camera/sobel.py
 camera/undistort.py

@@ -125,7 +125,7 @@ def generate_launch_description():
         'ev3A',
         'motorA_controller',
         1,                              # motor id
-        'motor/motorA_cmd_in',
+        'motor/motorA_cmd_in',          # 輸入角度
         actionA_name,
         -7.0                               # gear ratio
     )

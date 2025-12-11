@@ -25,6 +25,8 @@ setup(
             'undistort = camera.undistort:main',
             'sobel = camera.sobel:main',
             'findLine = camera.findLine:main',
+            'liquid_level = camera.liquid_level:main',
+            'liquid_level_adj = camera.liquid_level_adj:main',
             
             'canny = camera.canny:main',
             'noise = camera.noise:main',

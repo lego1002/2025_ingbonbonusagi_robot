@@ -15,11 +15,11 @@ class SobelEdgeDetectionNode(Node):
 
         self.bridge = CvBridge()
 
-        # 訂閱 /camera/image_rect（原始矯正後影像）
+        # 訂閱 /camera/image_raw（相機原始影像）
         self.sub = self.create_subscription(
             Image, '/camera/image_raw', self.image_callback, 10
         )
-        # 發佈邊緣圖（不回寫 rect）
+        # 發佈邊緣圖
         self.pub = self.create_publisher(Image, '/camera/image_edge', 10)
 
         self.get_logger().info("Sobel邊緣檢測節點已啟動 (訂閱 /camera/image_raw)")
@@ -30,8 +30,10 @@ class SobelEdgeDetectionNode(Node):
         cv2.namedWindow("CLAHE Enhanced Image", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("CLAHE Enhanced Image", 800, 600)
 
-        # ROI 半徑（只保留該範圍內的 Sobel 結果）
-        self.roi_radius = 200
+        # ROI 形狀：中心長方形（高大於寬）
+        # 使用畫面尺寸比例來定義：例如 寬度 30% 、高度 80%
+        self.roi_width_ratio = 0.3   # 寬度佔整張圖的比例
+        self.roi_height_ratio = 0.8  # 高度佔整張圖的比例
 
         # CLAHE 參數
         self.clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -44,7 +46,7 @@ class SobelEdgeDetectionNode(Node):
         # 形態學核
         self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
 
-        # 快取用的遮罩
+        # 快取用遮罩
         self._mask_shape = None
         self._mask = None
 
@@ -82,12 +84,35 @@ class SobelEdgeDetectionNode(Node):
             return img.astype(np.uint8)
         return cv2.convertScaleAbs(img)
 
-    def _get_circular_mask(self, h: int, w: int) -> np.ndarray:
-        """中心為畫面中心、半徑 roi_radius 的二值圓形遮罩 (uint8, 0/255)。"""
+    def _get_rect_mask(self, h: int, w: int) -> np.ndarray:
+        """
+        中心長方形遮罩 (uint8, 0/255)：
+        寬度 = roi_width_ratio * w
+        高度 = roi_height_ratio * h
+        """
         if self._mask_shape != (h, w):
-            center = (w // 2, h // 2)
             mask = np.zeros((h, w), dtype=np.uint8)
-            cv2.circle(mask, center, self.roi_radius, 255, -1)
+
+            cx = w // 2
+            cy = h // 2
+
+            rect_w = int(w * self.roi_width_ratio)
+            rect_h = int(h * self.roi_height_ratio)
+
+            # 確保 rect_h > rect_w（高大於寬）
+            if rect_h <= rect_w:
+                rect_h = min(h, int(rect_w * 1.5))
+
+            half_w = rect_w // 2
+            half_h = rect_h // 2
+
+            x1 = max(0, cx - half_w)
+            x2 = min(w, cx + half_w)
+            y1 = max(0, cy - half_h)
+            y2 = min(h, cy + half_h)
+
+            mask[y1:y2, x1:x2] = 255
+
             self._mask = mask
             self._mask_shape = (h, w)
         return self._mask
@@ -98,7 +123,7 @@ class SobelEdgeDetectionNode(Node):
                 self.get_logger().info(f"來源編碼: {msg.encoding}")
                 self._printed_enc = True
 
-            # 1) 穩健轉灰階 uint8
+            # 1) 轉灰階
             gray = self._to_gray8(msg)
             h, w = gray.shape
 
@@ -122,19 +147,17 @@ class SobelEdgeDetectionNode(Node):
                 mag = cv2.magnitude(sobel_x, sobel_y)
                 sobel_resp = mag * angle_mask
 
-            # 4) 只保留中心圓形區域
-            mask = self._get_circular_mask(h, w).astype(np.float32) / 255.0
+            # 4) 只保留中心長方形區域
+            mask = self._get_rect_mask(h, w).astype(np.float32) / 255.0
             sobel_resp *= mask
 
             # 5) 正規化到 0~255 並轉 uint8
             sobel_edges = cv2.normalize(sobel_resp, None, 0, 255, cv2.NORM_MINMAX)
             sobel_edges = sobel_edges.astype(np.uint8)
 
-            # === 6) 形態學操作：膨脹 ===
+            # 6) 形態學：膨脹（若要 close 可改下面那行註解）
             dilated = cv2.dilate(sobel_edges, self.kernel, iterations=1)
-
-            # （若想改用「閉運算 (close)」版本可用下行替代）
-            # dilated = cv2.morphologyEx(sobel_edges, cv2.MORPH_CLOSE, self.kernel, iterations=1)
+            # dilated = cv2.morphologyEx(sobel_edges, cv2.MORPH_CLOSE, self.kernel, iterations=1)  # close 版
 
             # 顯示
             cv2.imshow("CLAHE Enhanced Image", clahe_full)
@@ -163,3 +186,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+

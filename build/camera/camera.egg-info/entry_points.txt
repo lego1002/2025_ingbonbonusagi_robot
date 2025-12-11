@@ -2,6 +2,8 @@
 camera_node = camera.camera_node:main
 canny = camera.canny:main
 findLine = camera.findLine:main
+liquid_level = camera.liquid_level:main
+liquid_level_adj = camera.liquid_level_adj:main
 noise = camera.noise:main
 sobel = camera.sobel:main
 undistort = camera.undistort:main
