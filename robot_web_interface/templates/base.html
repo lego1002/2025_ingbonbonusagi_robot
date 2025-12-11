@@ -1,0 +1,79 @@
+<!DOCTYPE html>                                                                             <!--document type declaration-->
+<html lang="en">                                                                            <!--opening html tag-->
+    <head>
+        <meta charset="UTF-8">                                                              <!--character encoding-->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">              <!--responsive design for different devices-->
+        <title>Robot Bartender</title>                                                      <!--title of the webpage(in the tab)-->
+        <style></style>                                                                     <!--can add css styles here-->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">    <!--link to external css file-->
+    </head>
+
+    <body>
+        <div class="top-bar">
+            <h3>Robot Bartender</h3>
+        </div>
+
+        <div class="container">
+            <div class="left">  
+                <img src="{{ url_for('static', filename= 'images/bar.jpg') }}" alt="Image not found">   <!--src: source, the path to image; alt: alternative text if image not found-->
+            </div>
+
+            <div class="right">
+                <h1>Welcome, <br>Robot Bartender at Your Service</h1>
+            </div>
+        </div>
+            
+        <div class="menu">
+            <div class="choiceA">
+                <button class="bavA bev-button" data-box-id="1">
+                    Beverage 1
+                    <span class="tooltip">
+                        <h4>What is this?</h4>
+                        Refreshing lemonade with 100% mountain green tea.
+                    </span>
+                </button>
+            </div>
+
+            <div class="choiceB">
+                <button class="bavB bev-button" data-box-id="2">
+                    Beverage 2
+                    <span class="tooltip">
+                        <h4>What is this?</h4>
+                        Warm coffee with fresh and soothing vanilla cream.
+                    </span>
+                </button>
+            </div>
+            
+            <div class="choiceC">
+                <button class="bavC bev-button" data-box-id="3">
+                    Beverage 3
+                    <span class="tooltip">
+                        <h4>What is this?</h4>
+                        Icy-cold cola with a hint of zesty lime.
+                    </span>
+                </button>
+            </div>
+            
+            <div class="choiceD">
+                <button class="bavD bev-button" data-box-id="4">
+                    Beverage 4
+                    <span class="tooltip">
+                        <h4>What is this?</h4>
+                        British black tea infused with aromatic bergamot.
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <div class="video">
+            <p>In progress</p>
+        </div>
+        
+        <div class="bottom-bar">
+            <h3 onclick="window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1', '_blank')" style="cursor:pointer">
+            About Us
+            </h3>
+        </div>
+        <script src="{{ url_for('static', filename='javascripts/run_control.js')}}"></script>
+    </body>
+</html>

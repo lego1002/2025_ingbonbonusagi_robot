@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_progress.css') }}">
+    <title>{{page_title}}</title>
+</head>
+<body>
+    <div class="top-bar">
+        <h3>Robot Bartender</h3>
+    </div>
+    <div class="container">
+        <p class="top">Beverage {{box_id}} is being prepared. This might take a while...</p>
+
+        <div class="middle">
+             <div class="left">
+                <div class="bar" id="bar1">
+                </div>
+                <h4 id="mess1">Order Received</h4>
+             </div>
+             <div class="mid">
+                <div class="bar" id="bar2">
+                </div>
+                <h4 id="mess2">Preparing Order</h4>
+             </div>
+             <div class="right">
+                <div class="bar" id="bar3">
+                </div>
+                <h4 id="mess3">Order Ready, Delivering</h4>
+             </div>
+        </div>
+        
+        <div class="bottom">
+            <button id="cancel">
+                Cancel Order
+            <span class="tooltip">
+                Cancel current order and return to main menu.
+            </span>
+            </button>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='javascripts/bar_blinks.js') }}"></script>
+    <script src="{{ url_for('static', filename='javascripts/cancel_and_return.js') }}"></script>
+</body>
+</html>
