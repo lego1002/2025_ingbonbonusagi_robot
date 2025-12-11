@@ -1,3 +1,13 @@
 venv/
 venv310/
 .env/
+# 忽略 ROS2 的編譯產物 (不管是放在根目錄還是子目錄)
+build/
+install/
+log/
+COLCON_IGNORE
+
+# 忽略 Python 虛擬環境
+WineRobot/
+__pycache__/
+*.pyc
