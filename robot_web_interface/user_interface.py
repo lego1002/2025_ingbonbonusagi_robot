@@ -12,6 +12,8 @@ box_states = {                          # box states dictionary, number [1, 2, 3
     3: 0
 }
 
+process = None
+
 # HTML route definitions
 @app.route("/")
 def hello_world():                      # define the function for homepage's route
@@ -48,19 +50,23 @@ def set_state():
 
 @app.route('/start-program', methods=['POST'])          # define a "/start-program" route to receive POST requests from JS
 def start_program():
-    process = subprocess.Popen(
-        [sys.executable, 'test_button_function.py'],      # 2025/12/11: changed from 'python' to 'sys.executable' for Windows compatibility
-        #['python', 'test_button_function.py'],     # start the external python script as a separate process, meaning Flask server contiues to run
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE,
-        text = True
-    )
-    out, err = process.communicate()
-    return jsonify({                                # respond to JS with a JSON message, this will later be logged to browser console
-        "status": "Program Started",
-        "output": out,
-        "error": err
-        })      
+    global process
+    if process is None or process.poll() is not None:
+        process = subprocess.Popen(
+            [sys.executable, 'blink_control.py'],           # start the external python script as a separate process, meaning Flask server contiues to run
+            start_new_session=True)
+        return jsonify({"status": "started"})
+    else:
+        return jsonify({"status": "already running"})
+
+@app.route('/stop-program', methods=['POST'])
+def stop_scripts():
+    global process, box_states
+    if process and process.poll() is None:
+        process.kill()
+        process = None      
+    box_states = {1: 0, 2: 0, 3: 0}  # reset box states when stopping the process
+    return jsonify({"status": "stopped"})
 
 if __name__ == "__main__":
     app.run(debug=True)
