@@ -1,4 +1,14 @@
 ﻿# 2025_ingbonbonusagi_robot
+** 下載joint state publisher**
+
+# 1. Update package lists
+sudo apt update
+
+# 2. Install joint_state_publisher (CLI)
+sudo apt install ros-humble-joint-state-publisher
+
+# 3. Install joint_state_publisher_gui (GUI)
+sudo apt install ros-humble-joint-state-publisher-gui
 
 **about using matlab simulation**
 1. 先下載 peter corke的robot toolbox
