@@ -1,6 +1,10 @@
 document.getElementById("cancel").addEventListener("click", async(event) => {
     event.preventDefault();
-
+    
+    fetch("http://127.0.0.1:5000/stop-program")
+        .then(res => res.json())
+        .then(data => console.log(data));
+    
     try {
         await fetch("/set_state", {
             method: "POST", 
@@ -16,6 +20,7 @@ document.getElementById("cancel").addEventListener("click", async(event) => {
     } catch (error) {
         console.error("Failed to reset states: ", error);
     }
+    
     const homePage = '/';
     window.location.href= homePage;
 })
