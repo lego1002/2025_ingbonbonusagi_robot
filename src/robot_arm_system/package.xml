@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>robot_arm_system</name>
+  <version>0.0.1</version>
+  <description>Camera + IK + command distributor for LEGO EV3 robot arm</description>
+
+  <maintainer email="you@example.com">YOUR_NAME</maintainer>
+  <license>MIT</license>
+
+  <!-- Python package build -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Runtime dependencies -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+
+  <!-- Launch file support -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <!-- Testing (optional) -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+
+</package>
