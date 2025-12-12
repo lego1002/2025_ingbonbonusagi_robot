@@ -237,6 +237,33 @@ def generate_launch_description():
         actionE_name,
         1.0
     )
+    
+    # ===============
+    # EV3B: MotorF 
+    # ===============
+    bridge_motorF = bridge_node(
+        ns='ev3B', name='bridge_motorF',
+        ros_sub='motor/motorF_cmd',
+        mqtt_pub='ev3B/motorF/cmd',
+        mqtt_sub='ev3B/motorF/status',
+        ros_pub='motor/motorF_status'
+    )
+    actionF_name = 'motorF_action'
+    motor_action_F = motor_action_node(
+        'ev3B',
+        'motor/motorF_cmd',
+        'motor/motorF_status',
+        actionF_name,
+        'motorF_action_server'
+    )
+    motorF_ctrl = motor_controller_node(
+        'ev3B',
+        'motorF_controller',
+        6, 
+        'motor/motorF_cmd_in',
+        actionF_name,
+        24.0
+    )
 
     return LaunchDescription([
         broker_ip_arg, username_arg, password_arg, broker_port_arg,
@@ -254,5 +281,7 @@ def generate_launch_description():
         bridge_motorD, motor_action_D, motorD_ctrl,
         # MotorE (ev3B)
         # bridge_motorE, motor_action_E, motorE_ctrl,
+        # MotorF (ev3B)
+        bridge_motorF, motor_action_F, motorF_ctrl,
     ])
     
