@@ -68,9 +68,9 @@ class IKNode(Node):
         phi = math.atan2(L3*math.sin(q3), L2 + L3*math.cos(q3))
         q2 = psi - phi
 
-        # 4) wrist orientation (simple version)
+        # 4) wrist orientation limitation
         q4 = 0.0
-        q5 = 0.0
+        q5 = -(q2 + q3)
 
         return q1, q2, q3, q4, q5
 
