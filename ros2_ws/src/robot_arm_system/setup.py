@@ -16,6 +16,14 @@ setup(
 
         # Install launch files
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+
+        # ★ 必須加入這一行，ROS 才找得到 Launch 檔
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+
+        # ★★★ 關鍵！必須加入這一行，ROS 才找得到 URDF 檔 ★★★
+        (os.path.join('share', package_name, 'urdf'), glob('urdf/*.urdf')),
+        # ★ 加入這一行，讓 install 資料夾裡也有 rviz 設定檔
+        (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

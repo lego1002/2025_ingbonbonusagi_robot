@@ -1,23 +1,24 @@
 <?xml version="1.0"?>
 <robot name="lego_5_axis">
 
-  <material name="grey">
-    <color rgba="0.5 0.5 0.5 1"/>
-  </material>
-  <material name="red">
-    <color rgba="0.8 0.1 0.1 1"/>
-  </material>
-  <material name="blue">
-    <color rgba="0.1 0.1 0.8 1"/>
-  </material>
+  <material name="base_color">
+    <color rgba="0.2 0.2 0.2 1.0"/> </material>
+  <material name="turret_color">
+    <color rgba="0.5 0.5 0.5 1.0"/> </material>
+  <material name="arm_color">
+    <color rgba="0.0 0.0 0.8 1.0"/> </material>
+  <material name="wrist_color">
+    <color rgba="0.0 0.8 0.0 1.0"/> </material>
+  <material name="gripper_color">
+    <color rgba="0.8 0.0 0.0 1.0"/> </material>
 
   <link name="base_link">
     <visual>
       <geometry>
-        <box size="0.1 0.1 0.05"/>
+        <box size="0.15 0.15 0.02"/>
       </geometry>
-      <origin xyz="0 0 0.025" rpy="0 0 0"/>
-      <material name="grey"/>
+      <origin xyz="0 0 0.01" rpy="0 0 0"/>
+      <material name="base_color"/>
     </visual>
   </link>
 
@@ -25,88 +26,103 @@
     <parent link="base_link"/>
     <child link="link1"/>
     <origin xyz="0 0 0.105" rpy="0 0 0"/>
-    <axis xyz="0 0 1"/> <limit lower="-2.35" upper="2.35" effort="10" velocity="1.0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.35" upper="2.35" effort="10" velocity="1.0"/>
   </joint>
 
   <link name="link1">
     <visual>
       <geometry>
-        <cylinder length="0.04" radius="0.03"/>
+        <cylinder length="0.105" radius="0.035"/>
       </geometry>
-      <origin xyz="0 0 0" rpy="1.57 0 0"/> 
-      <material name="blue"/>
+      <origin xyz="0 0 -0.0525" rpy="0 0 0"/>
+      <material name="turret_color"/>
     </visual>
   </link>
 
   <joint name="joint2" type="revolute">
     <parent link="link1"/>
     <child link="link2"/>
-    <origin xyz="0.023 0 0" rpy="1.5708 0 0"/> 
-    <axis xyz="0 0 1"/>
+    <origin xyz="0.023 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
     <limit lower="-0.5" upper="0.5" effort="10" velocity="1.0"/>
   </joint>
 
   <link name="link2">
     <visual>
       <geometry>
-        <cylinder length="0.135" radius="0.02"/>
+        <box size="0.04 0.04 0.135"/>
       </geometry>
-      <origin xyz="0.0675 0 0" rpy="0 1.5708 0"/>
-      <material name="grey"/>
+      <origin xyz="0 0 0.0675" rpy="0 0 0"/>
+      <material name="arm_color"/>
     </visual>
   </link>
 
   <joint name="joint3" type="revolute">
     <parent link="link2"/>
     <child link="link3"/>
-    <origin xyz="0.135 0 0" rpy="0 0 0"/>
-    <axis xyz="0 0 1"/>
+    <origin xyz="0 0 0.135" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
     <limit lower="-0.66" upper="0.52" effort="10" velocity="1.0"/>
   </joint>
 
   <link name="link3">
     <visual>
       <geometry>
-        <cylinder length="0.035" radius="0.02"/>
+        <cylinder length="0.035" radius="0.03"/>
       </geometry>
-      <origin xyz="0.0175 0 0" rpy="0 1.5708 0"/>
-      <material name="blue"/>
+      <origin xyz="0 0 0.0175" rpy="0 0 0"/>
+      <material name="turret_color"/>
     </visual>
   </link>
 
   <joint name="joint4" type="revolute">
     <parent link="link3"/>
     <child link="link4"/>
-    <origin xyz="0.035 0 0" rpy="-1.5708 0 0"/>
-    <axis xyz="0 0 1"/>
+    <origin xyz="0 0 0.035" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
     <limit lower="-3.14" upper="3.14" effort="10" velocity="1.0"/>
   </joint>
 
   <link name="link4">
     <visual>
       <geometry>
-        <cylinder length="0.137" radius="0.015"/>
+        <box size="0.137 0.03 0.03"/>
       </geometry>
-      <origin xyz="0 0 0.0685" rpy="0 0 0"/>
-      <material name="grey"/>
+      <origin xyz="0.0685 0 0" rpy="0 0 0"/>
+      <material name="wrist_color"/>
     </visual>
   </link>
 
   <joint name="joint5" type="revolute">
     <parent link="link4"/>
     <child link="link5"/>
-    <origin xyz="0 0 0.137" rpy="1.5708 0 -1.5708"/>
-    <axis xyz="0 0 1"/>
+    <origin xyz="0.137 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/> 
     <limit lower="-1.57" upper="1.57" effort="10" velocity="1.0"/>
   </joint>
 
   <link name="link5">
     <visual>
       <geometry>
-        <box size="0.097 0.03 0.01"/>
+        <box size="0.04 0.08 0.02"/>
       </geometry>
-      <origin xyz="0.0485 0 0" rpy="0 0 0"/>
-      <material name="red"/>
+      <origin xyz="0.02 0 0" rpy="0 0 0"/>
+      <material name="gripper_color"/>
+    </visual>
+    <visual>
+      <geometry>
+        <box size="0.06 0.01 0.02"/>
+      </geometry>
+      <origin xyz="0.06 0.035 0" rpy="0 0 0"/>
+      <material name="gripper_color"/>
+    </visual>
+    <visual>
+      <geometry>
+        <box size="0.06 0.01 0.02"/>
+      </geometry>
+      <origin xyz="0.06 -0.035 0" rpy="0 0 0"/>
+      <material name="gripper_color"/>
     </visual>
   </link>
 
