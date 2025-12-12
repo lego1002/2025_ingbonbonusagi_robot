@@ -22,3 +22,7 @@
 這一步就是告訴 MATLAB：以後遇到 rotx，先用 Peter Corke 的，不要用官方的。
 
 點擊 「Save」，然後 「Close」。
+
+**about the python file of webpage (folder: robot_web_interface)**
+由於先前在電腦本地端使用 virtual environment 管理 flask 等套件，在此以 .gitignore檔忽略　git 對所有虛擬環境的追蹤。
+若之後要在其他裝置執行網頁程式，請先獨立建立本地端虛擬機並安裝相關套件(pip3 install flask, flask_cors, request)，或是直接安裝於 python 版本中。
