@@ -1,3 +1,7 @@
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Int32MultiArray
+import json
 import numpy as np
 
 # ============================
@@ -234,23 +238,52 @@ def report_limit_violations(violations):
             f"exceed = {v['exceed_deg']:.3f}°"
         )
 
+
+pt0 = pt1 = None
+def traj_point_callback(msg):
+    global pt0, pt1
+    values = msg.data
+    print(f"Received traj_point: {values}")
+
+    if len(values) == 2:
+        pt0 = values[0]
+        pt1 = values[1]
+        print(f"Point 1: {pt0}, Point 2: {pt1}")
+
 # ============================
 # 簡單測試
 # ============================
 
+
+with open("test_point.json", "r") as traj:
+    points = json.load(traj)*0.01
+
 if __name__ == "__main__":
-    target = np.array([0.30, 0.00, 0.20])  # 目標位置(m)
+    
+    rclpy.init()
+
+    node = Node('webpage_subscriber')
+    subscribtion = node.create_subscription(
+        Int32MultiArray, 
+        'traj_point', 
+        traj_point_callback,
+        10)
+    
+    listX = [pt0, pt1]
+    
     q0 = np.zeros(5)
+    for item in listX:
+        #target = np.array([0.30, 0.00, 0.20])  # 目標位置(m)
+        target = points[str(item)]
+        q_sol, err, ok = ik_constrained(target, q0)
 
-    q_sol, err, ok = ik_constrained(target, q0)
+        print("IK success (position-only):", ok)
+        pretty_print_solution(q_sol, err, p_target=target)
 
-    print("IK success (position-only):", ok)
-    pretty_print_solution(q_sol, err, p_target=target)
+        violations = check_joint_limits(q_sol, q_lims)
 
-    violations = check_joint_limits(q_sol, q_lims)
-
-    if violations:
-        report_limit_violations(violations)
-        print("=> This target may be unreachable within joint limits (given your constraints).")
-    else:
-        print("✅ All joints within limits.")
+        if violations:
+            report_limit_violations(violations)
+            print("=> This target may be unreachable within joint limits (given your constraints).")
+        else:
+            print("✅ All joints within limits.")
