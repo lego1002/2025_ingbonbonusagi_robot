@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 from glob import glob
 import os
 
@@ -13,11 +13,17 @@ setup(
             ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
         
-        (os.path.join("share", package_name, "static"),
-         glob("flask_ui/static/**/*", recursive=True)),
-
-        (os.path.join("share", package_name, "templates"),
-         glob("flask_ui/templates/*")),
+        ("share/" + package_name + "/static/images",
+            glob("flask_ui/static/images/*")),
+        
+        ('share/' + package_name + "static/css",
+            glob("flask_ui/static/css/*")),
+        
+        ("share/" + package_name + "static/javascripts",
+            glob("flask_ui/static/javascripts/*")),
+        
+        ("share" + package_name + "templates",
+             glob("flask_ui/templates/*")),
     ],
     
     install_requires=['setuptools', 'flask'],
