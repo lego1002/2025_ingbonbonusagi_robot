@@ -28,8 +28,11 @@ def main():
     motorC_py = os.path.join(base_dir, "ev3_motorC.py")
 
     # === 只要改這裡的 IP，就能改全部 motor 的 broker ===
-    BROKER_IP = "10.13.209.64"
+    # BROKER_IP = "10.13.209.64"
+    BROKER_IP = "172.20.10.4"
 
+
+    
     cleanup_tacho_motors()
 
     procs = []
