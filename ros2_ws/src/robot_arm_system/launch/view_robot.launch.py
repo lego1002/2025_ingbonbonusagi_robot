@@ -1,7 +1,6 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-# [修正] 應該是 launch.substitutions (中間是點，不是底線)
 from launch.substitutions import Command
 from launch_ros.actions import Node
 
@@ -11,22 +10,31 @@ def generate_launch_description():
 
     # 1. 取得 URDF 路徑
     default_model_path = os.path.join(pkg_share, 'urdf/lego_arm.urdf')
-
     # 2. 取得 Rviz Config 路徑
     rviz_config_path = os.path.join(pkg_share, 'rviz/lego_arm.rviz')
 
+    # 3. 機器人狀態發布節點 (TF 生成器)
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
+        name='robot_state_publisher',
+        output='screen',
         parameters=[{'robot_description': Command(['cat ', default_model_path])}]
     )
 
-    joint_state_publisher_gui_node = Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        name='joint_state_publisher_gui'
+    # 4. [新增] 關節狀態發布節點 (代理人)
+    # 功能：沒收到指令時發布 0 度；收到 /ik_joint_states 時轉發該角度
+    joint_state_publisher_node = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
+        parameters=[{
+            'source_list': ['/ik_joint_states'],  # 監聽我們 Python 程式發出的 Topic
+            'robot_description': Command(['cat ', default_model_path])
+        }]
     )
 
+    # 5. Rviz 節點
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -37,6 +45,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         robot_state_publisher_node,
-        joint_state_publisher_gui_node,
+        joint_state_publisher_node,  # 記得把新節點加進來
         rviz_node
     ])
