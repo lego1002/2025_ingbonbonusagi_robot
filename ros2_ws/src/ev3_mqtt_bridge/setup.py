@@ -24,6 +24,7 @@ setup(
             'ros_mqtt_bridge = ev3_mqtt_bridge.ros_mqtt_bridge:main',
             'led_controller = ev3_mqtt_bridge.led_controller:main',
             'motor_action = ev3_mqtt_bridge.motor_action:main',
+            'motor_controller = ev3_mqtt_bridge.motor_controller:main',
             'motorA_controller = ev3_mqtt_bridge.motorA_controller:main',
             'motorB_controller = ev3_mqtt_bridge.motorB_controller:main',
             'motorC_controller = ev3_mqtt_bridge.motorC_controller:main',
