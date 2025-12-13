@@ -282,6 +282,6 @@ def generate_launch_description():
         # MotorE (ev3B)
         # bridge_motorE, motor_action_E, motorE_ctrl,
         # MotorF (ev3B)
-        bridge_motorF, motor_action_F, motorF_ctrl,
+        # bridge_motorF, motor_action_F, motorF_ctrl,
     ])
     

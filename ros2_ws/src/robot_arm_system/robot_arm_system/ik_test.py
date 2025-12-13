@@ -239,7 +239,7 @@ def report_limit_violations(violations):
 # ============================
 
 if __name__ == "__main__":
-    target = np.array([0.30, 0.00, 0.20])  # 目標位置(m)
+    target = np.array([0.257, 0.00, 0.275])  # 目標位置(m)
     q0 = np.zeros(5)
 
     q_sol, err, ok = ik_constrained(target, q0)
