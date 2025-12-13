@@ -40,6 +40,8 @@ setup(
             'fixed_target = robot_arm_system.fixed_target:main',
             'ik_node = robot_arm_system.ik_node:main',
             'distributor = robot_arm_system.distributor_node:main',
+            'ik_test = robot_arm_system.ik_test:main',
+            'ik_test_lego_using = robot_arm_system.ik_test_lego_using:main',
         ],
     },
 )
