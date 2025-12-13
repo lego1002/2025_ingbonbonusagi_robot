@@ -4,7 +4,9 @@ from threading import Thread
 from flask import Flask, render_template, jsonify, request  
 from std_msgs.msg import Int32MultiArray, String
 
-app = Flask(__name__)                   # create Flask app instance (server)
+def create_app():
+    app = Flask(__name__)                   # create Flask app instance (server)
+
 
 class FlaskNode(Node):
     def __init__(self):
