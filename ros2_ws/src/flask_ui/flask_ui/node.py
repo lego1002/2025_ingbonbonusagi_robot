@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from threading import Thread
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int32MultiArray, String
 
 from flask_ui.web import create_app
 
@@ -12,7 +12,8 @@ class FlaskNode(Node):
         self.get_logger().info("Starting Flask UI...")
 
         self.publisher = self.create_publisher(
-            Int32MultiArray,
+            String,
+            #Int32MultiArray,
             "traj_point",
             10
         )
@@ -30,7 +31,8 @@ class FlaskNode(Node):
             kwargs={
                 "host": "127.0.0.1",
                 "port": 5000,
-                "use_reloader": False
+                "use_reloader": False,
+                "debug": False
             },
             daemon=True
         ).start()
@@ -38,8 +40,11 @@ class FlaskNode(Node):
         self.get_logger().info("Flask UI started")
 
     def publish_box(self, box_id):
-        msg = Int32MultiArray()
-        msg.data = [int(box_id)]
+        msg = String()
+        #msg = Int32MultiArray()
+        #buttonNum = int(box_id)
+        #msg.data = [int(box_id)]
+        msg.data = str(box_id)
         self.publisher.publish(msg)
 
 
@@ -47,7 +52,7 @@ def main():
     rclpy.init()
     node = FlaskNode()
     try:
-        rclpy.sspin(node)
+        rclpy.spin(node)
     except KeyboardInterrupt:
         pass    
     node.destroy_node()

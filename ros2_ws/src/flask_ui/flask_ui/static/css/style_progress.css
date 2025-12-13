@@ -1,0 +1,111 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+.top-bar {
+    flex: 0 0 60px;
+    width: 100%;
+    background-color: black;
+    color: white;
+    font-size: 25px;
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+}
+
+.container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: stretch;
+}
+
+.top {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 40px;
+}
+
+.middle {
+    flex: 5;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    align-items: center;
+    font-weight: bold;
+    font-size: 20px;
+    color: black;
+}
+
+.middle h4{
+    text-align: center;
+}
+
+.middle .bar{
+    width: 360px;
+    height: 10px;
+    border-radius: 5px;
+    border: 2px solid black;
+}
+
+.bottom {
+    flex: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: black;
+}
+
+.bottom button {
+    position: relative;
+    background-color: red;
+    backdrop-filter: blur(6px);
+    color: white;
+    padding: 20px 20px;
+    font-size: 50px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.bottom:hover button {
+    transform: scale(1.1);
+    background-color: grey;
+    transition: 1s;
+}
+
+.bottom button .tooltip {
+    visibility: hidden;
+    opacity: 0;
+    width: 300px;
+    background-color: black;
+    color: white;
+    font-size: 20px;
+    white-space: normal;
+    text-align: center;
+    border-radius: 5px;
+    padding: 10px;
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: opacity 0.3s;
+    z-index: 10;
+}
+.tooltip h4 {
+    font-size: 30px;
+    margin: 5px;
+}
+.bottom button:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}

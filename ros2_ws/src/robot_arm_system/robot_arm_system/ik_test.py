@@ -238,6 +238,9 @@ def report_limit_violations(violations):
             f"exceed = {v['exceed_deg']:.3f}°"
         )
 
+# ============================
+# Subscriber 範例
+# ============================
 
 pt0 = pt1 = None
 def traj_point_callback(msg):

@@ -16,14 +16,14 @@ setup(
         ("share/" + package_name + "/static/images",
             glob("flask_ui/static/images/*")),
         
-        ('share/' + package_name + "static/css",
-            glob("flask_ui/static/css/*")),
+        ('share/' + package_name + "/static/css",
+            glob("flask_ui/static/css/*.css")),
         
-        ("share/" + package_name + "static/javascripts",
-            glob("flask_ui/static/javascripts/*")),
+        ("share/" + package_name + "/static/javascripts",
+            glob("flask_ui/static/javascripts/*.js")),
         
-        ("share" + package_name + "templates",
-             glob("flask_ui/templates/*")),
+        ("share/" + package_name + "/templates",
+             glob("flask_ui/templates/*.html")),
     ],
     
     install_requires=['setuptools', 'flask'],
