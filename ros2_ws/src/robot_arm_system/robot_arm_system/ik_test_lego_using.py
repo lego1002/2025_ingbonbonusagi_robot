@@ -1,104 +1,161 @@
 #!/usr/bin/env python3
+import json
+import numpy as np
+
 import rclpy
 from rclpy.node import Node
-import sys
 from std_msgs.msg import Float64
+from sensor_msgs.msg import JointState
 
-class IKCommander(Node):
+# ✅ 重點：相對 import（同一個 package 裡）
+from .ik_test import (
+    ik_constrained,
+    check_joint_limits,
+    report_limit_violations,
+    q_lims,
+    DEG,
+)
+
+JSON_PATH = "/home/lego/Desktop/2025_ingbonbonusagi_robot/ros2_ws/path.json"
+
+JOINT_NAMES = ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
+
+def clamp_to_joint_limits(q, q_lims):
+    q2 = q.copy()
+    for i in range(len(q2)):
+        lo, hi = q_lims[i, 0], q_lims[i, 1]
+        q2[i] = float(np.clip(q2[i], lo, hi))
+    return q2
+
+def interpolate_joint_path(q_start, q_end, steps):
+    # 回傳 list(np.array shape(5,))
+    out = []
+    for i in range(1, steps + 1):
+        s = i / steps
+        out.append((1.0 - s) * q_start + s * q_end)
+    return out
+
+class IKPathPlayer(Node):
     def __init__(self):
-        super().__init__('ik_command_publisher')
+        super().__init__("ik_path_player")
 
-        # ======================================================================
-        # Publisher 設定
-        # 依照指示：motor/motor[A~F]_cmd_in
-        # ======================================================================
+        # motor cmd publishers (deg)
+        self.motor_pub = {
+            "A": self.create_publisher(Float64, "/motor/motorA_cmd_in", 10),
+            "B": self.create_publisher(Float64, "/motor/motorB_cmd_in", 10),
+            "C": self.create_publisher(Float64, "/motor/motorC_cmd_in", 10),
+            "D": self.create_publisher(Float64, "/motor/motorD_cmd_in", 10),
+            "E": self.create_publisher(Float64, "/motor/motorE_cmd_in", 10),
+            "F": self.create_publisher(Float64, "/motor/motorF_cmd_in", 10),
+        }
 
-        # --- EV3 A (Joint 1, 2, 3) ---
-        self.pub_motorA = self.create_publisher(Float64, '/ev3A/motor/motorA_cmd_in', 10)
-        self.pub_motorB = self.create_publisher(Float64, '/ev3A/motor/motorB_cmd_in', 10)
-        self.pub_motorC = self.create_publisher(Float64, '/ev3A/motor/motorC_cmd_in', 10)
+        # rviz joint states (rad)
+        self.joint_state_pub = self.create_publisher(JointState, "/ik_joint_states", 10)
 
-        # --- EV3 B (Joint 4, 5, 6) ---
-        # 這裡對應 EV3B 的 Port A, B, C -> 對應到系統命名的 Motor D, E, F
-        self.pub_motorD = self.create_publisher(Float64, '/ev3B/motor/motorD_cmd_in', 10)
-        self.pub_motorE = self.create_publisher(Float64, '/ev3B/motor/motorE_cmd_in', 10)
-        self.pub_motorF = self.create_publisher(Float64, '/ev3B/motor/motorF_cmd_in', 10)
+        # 讀 JSON 路徑
+        self.path = self.load_path()
+        self.idx = 0
 
-        self.get_logger().info('IK Commander Started. Topics: motor[A-F]_cmd_in')
+        # 前一姿態（rad, 5 joints）
+        self.q_prev = np.zeros(5, dtype=float)
 
-    def publish_angles(self, angles):
-        """
-        angles: list [J1, J2, J3, J4, J5, J6]
-        """
-        if not angles or len(angles) < 6:
-            self.get_logger().warn("算出的角度少於 6 個，無法發送")
+        # 插值軌跡 queue
+        self.traj_queue = []
+
+        # 播放參數
+        self.publish_hz = 20.0          # 20 Hz
+        self.steps_per_segment = 50     # 每段 50 steps（約 2.5 秒/段）
+        self.timer = self.create_timer(1.0 / self.publish_hz, self.on_timer)
+
+        self.get_logger().info(f"IKPathPlayer started. points={len(self.path)}")
+
+    def load_path(self):
+        with open(JSON_PATH, "r") as f:
+            data = json.load(f)
+
+        path = []
+        for p in data:
+            # JSON x,y,z 是 cm → 轉成 m
+            xyz = np.array([p["x"], p["y"], p["z"]], dtype=float) * 0.01
+            path.append((p.get("comment", ""), xyz))
+        return path
+
+    def on_timer(self):
+        # 1) 若 queue 有插值點 → 直接 publish 下一步
+        if self.traj_queue:
+            q = self.traj_queue.pop(0)
+            self.publish_motors(q)
+            self.publish_joint_states(q)
+            self.q_prev = q.copy()
             return
 
-        msg = Float64()
+        # 2) queue 空了 → 準備下一個 JSON 點
+        if self.idx >= len(self.path):
+            # 播完就停在最後一點，不再動
+            return
 
-        # EV3 A
-        msg.data = float(angles[0]); self.pub_motorA.publish(msg) # Motor A
-        msg.data = float(angles[1]); self.pub_motorB.publish(msg) # Motor B
-        msg.data = float(angles[2]); self.pub_motorC.publish(msg) # Motor C
+        comment, target = self.path[self.idx]
+        self.get_logger().info(f"[{self.idx+1}/{len(self.path)}] target: {comment} xyz(m)={target}")
 
-        # EV3 B
-        msg.data = float(angles[3]); self.pub_motorD.publish(msg) # Motor D
-        msg.data = float(angles[4]); self.pub_motorE.publish(msg) # Motor E
-        msg.data = float(angles[5]); self.pub_motorF.publish(msg) # Motor F
+        q_sol, err, ok = ik_constrained(target, self.q_prev)
 
-        print(f"--- 已發送至 motor[A~F]_cmd_in ---")
-        print(f"  J1(A):{angles[0]:.2f}, J2(B):{angles[1]:.2f}, J3(C):{angles[2]:.2f}")
-        print(f"  J4(D):{angles[3]:.2f}, J5(E):{angles[4]:.2f}, J6(F):{angles[5]:.2f}")
+        if not ok:
+            self.get_logger().warn(f"IK failed. err={err:.6f} m. skip this point.")
+            self.idx += 1
+            return
 
+        # 先檢查是否超限（這裡只是報告），然後 clamp 保護
+        violations = check_joint_limits(q_sol, q_lims)
+        if violations:
+            self.get_logger().warn("Joint limit violated. Will clamp to limits.")
+            # 給你在 terminal 看得懂的報告
+            report_limit_violations(violations)
 
-# ==============================================================================
-# ↓↓↓↓↓ 請將你的 IK 運算函式貼在下面 ↓↓↓↓↓
-# ==============================================================================
-def calculate_inverse_kinematics(x, y, z):
-    """
-    回傳格式必須是 List，包含 6 個 float:
-    return [theta1, theta2, theta3, theta4, theta5, theta6]
-    """
-    
-    # [在此處貼上你的 Code]
-    
-    # 範例回傳 (請替換掉)：
-    return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        q_sol = clamp_to_joint_limits(q_sol, q_lims)
 
-# ==============================================================================
-# ↑↑↑↑↑ 你的 Code 結束 ↑↑↑↑↑
-# ==============================================================================
+        # 建立插值軌跡（連續動作的關鍵）
+        self.traj_queue = interpolate_joint_path(self.q_prev, q_sol, self.steps_per_segment)
 
-def main(args=None):
-    rclpy.init(args=args)
-    commander = IKCommander()
+        self.idx += 1
 
-    try:
-        while rclpy.ok():
-            try:
-                raw_in = input("\n請輸入 X (或 'q'): ")
-                if raw_in.lower() == 'q': break
-                
-                x = float(raw_in)
-                y = float(input("請輸入 Y: "))
-                z = float(input("請輸入 Z: "))
+    def publish_motors(self, q_rad):
+        # motor topic 要 deg（你之前這樣設計，我照做）
+        q_deg = q_rad / DEG
 
-                angles = calculate_inverse_kinematics(x, y, z)
-                
-                if angles:
-                    commander.publish_angles(angles)
-                    rclpy.spin_once(commander, timeout_sec=0.1)
-                else:
-                    print("IK 無解")
+        mapping = {
+            "A": float(q_deg[0]),
+            "B": float(q_deg[1]),
+            "C": float(q_deg[2]),
+            "D": float(q_deg[3]),
+            "E": float(q_deg[4]),
+            "F": 0.0,   # 你目前 IK 只有 5 軸，F 固定 0
+        }
 
-            except ValueError:
-                print("輸入錯誤")
-            except Exception as e:
-                print(f"錯誤: {e}")
+        for k, v in mapping.items():
+            msg = Float64()
+            msg.data = v
+            self.motor_pub[k].publish(msg)
 
-    finally:
-        commander.destroy_node()
-        rclpy.shutdown()
+    def publish_joint_states(self, q_rad):
+        msg = JointState()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.name = JOINT_NAMES
+        msg.position = [
+            float(q_rad[0]),
+            float(q_rad[1]),
+            float(q_rad[2]),
+            float(q_rad[3]),
+            float(q_rad[4]),
+            0.0,
+        ]
+        self.joint_state_pub.publish(msg)
 
-if __name__ == '__main__':
+def main():
+    rclpy.init()
+    node = IKPathPlayer()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == "__main__":
     main()
