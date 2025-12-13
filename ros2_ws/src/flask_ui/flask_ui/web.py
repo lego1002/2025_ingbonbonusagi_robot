@@ -1,10 +1,28 @@
+import os
 from flask import Flask, render_template, jsonify, request
 
+def get_package_share_directory(package_name: str) -> str:
+    """
+    Find the ROS 2 package share directory at runtime.
+    Works for ros2 run and ros2 launch.
+    """
+    ament_prefixes = os.environ.get('AMENT_PREFIX_PATH', '').split(':')
+    for prefix in ament_prefixes:
+        candidate = os.path.join(prefix, 'share', package_name)
+        if os.path.isdir(candidate):
+            return candidate
+    raise RuntimeError(f'Package share directory not found for {package_name}')
+
 def create_app(node):
+    pkg_share = get_package_share_directory('flask_ui')
+
+    static_dir = os.path.join(pkg_share, 'static')
+    template_dir = os.path.join(pkg_share, 'templates')
+
     app = Flask(
         __name__,
-        template_folder="templates",
-        static_folder="static"
+        template_folder=template_dir,
+        static_folder=static_dir
     )
 
     @app.route("/")

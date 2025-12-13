@@ -9,6 +9,7 @@ from flask_ui.web import create_app
 class FlaskNode(Node):
     def __init__(self):
         super().__init__("flask_node")
+        self.get_logger().info("Starting Flask UI...")
 
         self.publisher = self.create_publisher(
             Int32MultiArray,
@@ -42,13 +43,10 @@ class FlaskNode(Node):
         self.publisher.publish(msg)
 
 
-def main(args=None):
-    rclpy.init(args=args)
+def main():
+    rclpy.init()
     node = FlaskNode()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    
+    app = create_app()
+    app.run(host="127.0.0.1", port=5000, debug=False)    
+    rclpy.shutdown()
