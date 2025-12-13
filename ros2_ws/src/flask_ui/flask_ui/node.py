@@ -46,7 +46,9 @@ class FlaskNode(Node):
 def main():
     rclpy.init()
     node = FlaskNode()
-    
-    app = create_app()
-    app.run(host="127.0.0.1", port=5000, debug=False)    
+    try:
+        rclpy.sspin(node)
+    except KeyboardInterrupt:
+        pass    
+    node.destroy_node()
     rclpy.shutdown()
