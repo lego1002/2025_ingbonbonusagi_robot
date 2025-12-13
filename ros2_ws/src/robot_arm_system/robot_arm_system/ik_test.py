@@ -242,16 +242,20 @@ def report_limit_violations(violations):
 # Subscriber 範例
 # ============================
 
-pt0 = pt1 = None
+buttonNum = None
+#pt0 = pt1 = None
 def traj_point_callback(msg):
-    global pt0, pt1
+    global buttonNum
+    #global pt0, pt1
     values = msg.data
     print(f"Received traj_point: {values}")
 
-    if len(values) == 2:
-        pt0 = values[0]
-        pt1 = values[1]
-        print(f"Point 1: {pt0}, Point 2: {pt1}")
+    buttonNum = values
+    
+    #if len(values) == 2:
+    #    pt0 = values[0]
+    #    pt1 = values[1]
+    #    print(f"Point 1: {pt0}, Point 2: {pt1}")
 
 # ============================
 # 簡單測試
@@ -272,7 +276,8 @@ if __name__ == "__main__":
         traj_point_callback,
         10)
     
-    listX = [pt0, pt1]
+    if buttonNum is 1:
+        listX = [1,0]
     
     q0 = np.zeros(5)
     for item in listX:
