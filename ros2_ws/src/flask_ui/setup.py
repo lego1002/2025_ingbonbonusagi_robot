@@ -9,14 +9,14 @@ setup(
     version='0.0.0',
     packages=find_packages(exclude=['test']),
     data_files=[
-    ("share/ament_index/resource_index/packages", ["resource/flask_ui"]),
-    ("share/flask_ui", ["package.xml"]),
-    
-    (os.path.join("share", "flask_ui", "templates"),
-     glob("flask_ui/templates/*")),
-    
-    (os.path.join("share", "flask_ui", "static"),
-     glob("flask_ui/static/**/*", recursive=True)),
+        ("share/ament_index/resource_index/packages", ["resource/flask_ui"]),
+        ("share/flask_ui", ["package.xml"]),
+        
+        (os.path.join("share", "flask_ui", "templates"),
+        glob("flask_ui/templates/*")),
+        
+        (os.path.join("share", "flask_ui", "static"),
+        glob("flask_ui/static/**/*", recursive=True)),
     ],
     
     install_requires=['setuptools', 'flask'],
