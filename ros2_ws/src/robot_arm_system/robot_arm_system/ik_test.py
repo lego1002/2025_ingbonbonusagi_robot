@@ -185,7 +185,7 @@ def check_joint_limits(q, q_lims, atol=1e-9):
         exceed: float (rad, 正值表示超出多少)
         exceed_deg: float
     """
-    q = np.asarray(q).reshape(-1)o
+    q = np.asarray(q).reshape(-1)
     violations = []
 
     for i in range(len(q)):
