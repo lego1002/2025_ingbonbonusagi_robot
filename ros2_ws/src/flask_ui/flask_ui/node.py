@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from threading import Thread
-from std_msgs.msg import Int32MultiArray, String
+from std_msgs.msg import Int32MultiArray
 
 from flask_ui.web import create_app
 
@@ -20,7 +20,6 @@ class FlaskNode(Node):
         self.get_logger().info("Starting Flask UI...")
 
         self.publisher = self.create_publisher(
-            #String,
             Int32MultiArray,
             "traj_point",
             10
