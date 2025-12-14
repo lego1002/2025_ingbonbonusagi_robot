@@ -4,7 +4,7 @@ import numpy as np
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Int32MultiArray
 from sensor_msgs.msg import JointState
 
 # ✅ 重點：相對 import（同一個 package 裡）
@@ -12,14 +12,22 @@ from .ik_test import (
     ik_constrained,
     check_joint_limits,
     report_limit_violations,
-    q_lims,
-    DEG,
 )
 
-JSON_PATH = "/home/lego/Desktop/2025_ingbonbonusagi_robot/ros2_ws/path.json"
+DEG = np.pi / 180.0
+q_lims = np.array([
+    [-135,  135],   # q1
+    [ -29,   29],   # q2
+    [ -30,   38],   # q3
+    [-180,  180],   # q4
+    [ -90,   90],   # q5
+]) * DEG
+
+JSON_PATH = "/home/joshlin69/Desktop/2025_ingbonbonusagi_robot/ros2_ws/test_point.json"
 
 JOINT_NAMES = ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
 
+#q is an array of length 5 (in radians)
 def clamp_to_joint_limits(q, q_lims):
     q2 = q.copy()
     for i in range(len(q2)):
@@ -34,6 +42,8 @@ def interpolate_joint_path(q_start, q_end, steps):
         s = i / steps
         out.append((1.0 - s) * q_start + s * q_end)
     return out
+
+
 
 class IKPathPlayer(Node):
     def __init__(self):
@@ -68,6 +78,20 @@ class IKPathPlayer(Node):
         self.timer = self.create_timer(1.0 / self.publish_hz, self.on_timer)
 
         self.get_logger().info(f"IKPathPlayer started. points={len(self.path)}")
+        
+        
+        # Subscriber to flask_ui, topic: traj_point
+        self.values = []
+        self.supscription = self.create_subscription(
+            Int32MultiArray,
+            'traj_point',
+            self.traj_point_callback,
+            10
+        )
+        
+    def traj_point_callback(self, msg):
+        self.values = msg.data
+
 
     def load_path(self):
         with open(JSON_PATH, "r") as f:
@@ -79,6 +103,18 @@ class IKPathPlayer(Node):
             xyz = np.array([p["x"], p["y"], p["z"]], dtype=float) * 0.01
             path.append((p.get("comment", ""), xyz))
         return path
+
+    def load_path_josh(self):
+        with open(JSON_PATH, "r") as traj:
+            points = json.load(traj)
+        
+        positions = []
+        for item in points:
+            coord_key = [k for k in item.keys() if k.isdigit()][0]
+            coord = np.array(item[coord_key], dtype=float)
+            
+            positions.append((coord_key, coord))
+        return positions
 
     def on_timer(self):
         # 1) 若 queue 有插值點 → 直接 publish 下一步
@@ -149,13 +185,21 @@ class IKPathPlayer(Node):
             0.0,
         ]
         self.joint_state_pub.publish(msg)
-
+        
+    
+    def produce_coordinates(self):
+        positions = dict(self.load_path_josh())
+        for item in self.values:
+            coord = positions.get(str(item))
+            # Do something with coord.
+            
+            
 def main():
     rclpy.init()
     node = IKPathPlayer()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-
+    
 if __name__ == "__main__":
     main()

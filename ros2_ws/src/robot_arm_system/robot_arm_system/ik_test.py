@@ -3,7 +3,6 @@ from rclpy.node import Node
 from std_msgs.msg import Int32MultiArray
 import json
 import numpy as np
-import os 
 
 # ============================
 # 基本參數
@@ -252,7 +251,7 @@ class TrajSubscriber(Node):
             'traj_point',
             self.traj_point_callback,
             10
-    )
+        )
         
     def traj_point_callback(self, msg):
         self.values = msg.data
