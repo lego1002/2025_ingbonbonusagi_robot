@@ -44,7 +44,6 @@ def interpolate_joint_path(q_start, q_end, steps):
     return out
 
 
-
 class IKPathPlayer(Node):
     def __init__(self):
         super().__init__("ik_path_player")
@@ -63,7 +62,7 @@ class IKPathPlayer(Node):
         self.joint_state_pub = self.create_publisher(JointState, "/ik_joint_states", 10)
 
         # 讀 JSON 路徑
-        self.path = self.load_path()
+        self.path = self.load_path()                        # NEED CHECKING
         self.idx = 0
 
         # 前一姿態（rad, 5 joints）
@@ -92,7 +91,7 @@ class IKPathPlayer(Node):
     def traj_point_callback(self, msg):
         self.values = msg.data
 
-
+    """
     def load_path(self):
         with open(JSON_PATH, "r") as f:
             data = json.load(f)
@@ -103,19 +102,25 @@ class IKPathPlayer(Node):
             xyz = np.array([p["x"], p["y"], p["z"]], dtype=float) * 0.01
             path.append((p.get("comment", ""), xyz))
         return path
+    """
 
-    def load_path_josh(self):
+    def load_path(self):
         with open(JSON_PATH, "r") as traj:
             points = json.load(traj)
         
+        path = []    
         positions = []
         for item in points:
             coord_key = [k for k in item.keys() if k.isdigit()][0]
             coord = np.array(item[coord_key], dtype=float)
             
             positions.append((coord_key, coord))
-        return positions
-
+        
+        for item in self.values:
+            coord = positions[item][1]
+            path.append((positions[item][0],coord))
+        return path
+    
     def on_timer(self):
         # 1) 若 queue 有插值點 → 直接 publish 下一步
         if self.traj_queue:
@@ -185,14 +190,7 @@ class IKPathPlayer(Node):
             0.0,
         ]
         self.joint_state_pub.publish(msg)
-        
-    
-    def produce_coordinates(self):
-        positions = dict(self.load_path_josh())
-        for item in self.values:
-            coord = positions.get(str(item))
-            # Do something with coord.
-            
+                   
             
 def main():
     rclpy.init()
