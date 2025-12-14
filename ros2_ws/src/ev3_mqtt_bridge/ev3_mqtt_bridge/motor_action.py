@@ -100,7 +100,7 @@ class MotorAction(Node):
             cmd = f'duty {int(v1)}'
         elif mode in ('abs', 'rel'):
             deg = int(v1)
-            speed = int(v2) if int(v2) != 0 else 300
+            speed = int(v2) if int(v2) != 0 else 80
             cmd = f'{mode} {deg} {speed}'
         else:
             goal_handle.abort()

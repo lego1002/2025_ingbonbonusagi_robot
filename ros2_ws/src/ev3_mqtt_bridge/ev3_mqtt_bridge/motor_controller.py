@@ -27,7 +27,7 @@ class MotorController(Node):
         self.declare_parameter('action_name', '')
         self.declare_parameter('cmd_input_topic', '')
         self.declare_parameter('ratio', 1.0)           # shaft_deg * ratio
-        self.declare_parameter('speed', 300.0)
+        self.declare_parameter('speed', 100.0)
 
         self.motor_id = int(self.get_parameter('motor_id').value)
         self.action_name = self.get_parameter('action_name').value

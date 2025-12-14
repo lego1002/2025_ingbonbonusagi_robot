@@ -25,6 +25,7 @@ def main():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     motorD_py = os.path.join(base_dir, "ev3_motorD.py")
     motorE_py = os.path.join(base_dir, "ev3_motorE.py")
+    motorF_py = os.path.join(base_dir, "ev3_motorF.py")
 
     # === 只要改這裡的 IP，就能改全部 motor 的 broker ===
     # BROKER_IP = "10.13.209.64"
@@ -43,6 +44,12 @@ def main():
         print("[LAUNCH] start motorE...")
         pE = subprocess.Popen(["python3", motorE_py, "--broker", BROKER_IP])
         procs.append(pE)
+
+        time.sleep(0.5)
+
+        print("[LAUNCH] start motorF...")
+        pF = subprocess.Popen(["python3", motorF_py, "--broker", BROKER_IP])
+        procs.append(pF)
 
         print("[LAUNCH] motors started. Press Ctrl+C to stop.")
 

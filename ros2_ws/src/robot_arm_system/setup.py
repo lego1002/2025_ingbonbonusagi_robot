@@ -44,6 +44,7 @@ setup(
             'ik_test_lego_using = robot_arm_system.ik_test_lego_using:main',
             'path_ik_executor = robot_arm_system.path_ik_executor:main',
             'zero_manager = robot_arm_system.zero_manager:main',
+            'teleop_zero = robot_arm_system.teleop_zero:main'
         ],
     },
 )

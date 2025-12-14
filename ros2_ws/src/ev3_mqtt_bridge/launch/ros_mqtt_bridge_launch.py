@@ -51,7 +51,7 @@ def motor_controller(ns, motor_id, joint, ratio):
             'cmd_input_topic': f'motor/motor{joint}_cmd_in',
             'action_name': f'motor{joint}_action',
             'ratio': ratio,
-            'speed': 300.0,
+            'speed': 100.0,
         }]
     )
 
@@ -89,133 +89,133 @@ def generate_launch_description():
             ratio=-7.0
         ),
         
-        # # =======================
-        # # EV3A / MotorB
-        # # =======================
-        # bridge_node(
-        #     'ev3A', 'bridge_motorB',
-        #     'motor/motorB_cmd',
-        #     'ev3A/motorB/cmd',
-        #     'ev3A/motorB/status',
-        #     'motor/motorB_status'
-        # ),
+        # =======================
+        # EV3A / MotorB
+        # =======================
+        bridge_node(
+            'ev3A', 'bridge_motorB',
+            'motor/motorB_cmd',
+            'ev3A/motorB/cmd',
+            'ev3A/motorB/status',
+            'motor/motorB_status'
+        ),
 
-        # motor_action_node(
-        #     'ev3A',
-        #     'motor/motorB_cmd',
-        #     'motor/motorB_status',
-        #     'motorB_action',
-        #     'motorB_action_server'
-        # ),
+        motor_action_node(
+            'ev3A',
+            'motor/motorB_cmd',
+            'motor/motorB_status',
+            'motorB_action',
+            'motorB_action_server'
+        ),
 
-        # motor_controller(
-        #     'ev3A',
-        #     motor_id=2,   # EV3 port A
-        #     joint='B',
-        #     ratio=-70/9
-        # ),
+        motor_controller(
+            'ev3A',
+            motor_id=2,   # EV3 port A
+            joint='B',
+            ratio=-70/9
+        ),
         
-        # # =======================
-        # # EV3A / MotorC
-        # # =======================
-        # bridge_node(
-        #     'ev3A', 'bridge_motorC',
-        #     'motor/motorC_cmd',
-        #     'ev3A/motorC/cmd',
-        #     'ev3A/motorC/status',
-        #     'motor/motorC_status'
-        # ),
+        # =======================
+        # EV3A / MotorC
+        # =======================
+        bridge_node(
+            'ev3A', 'bridge_motorC',
+            'motor/motorC_cmd',
+            'ev3A/motorC/cmd',
+            'ev3A/motorC/status',
+            'motor/motorC_status'
+        ),
 
-        # motor_action_node(
-        #     'ev3A',
-        #     'motor/motorC_cmd',
-        #     'motor/motorC_status',
-        #     'motorC_action',
-        #     'motorC_action_server'
-        # ),
+        motor_action_node(
+            'ev3A',
+            'motor/motorC_cmd',
+            'motor/motorC_status',
+            'motorC_action',
+            'motorC_action_server'
+        ),
 
-        # motor_controller(
-        #     'ev3A',
-        #     motor_id=3,   # EV3 port A
-        #     joint='C',
-        #     ratio=5.0
-        # ),
+        motor_controller(
+            'ev3A',
+            motor_id=3,   # EV3 port A
+            joint='C',
+            ratio=5.0
+        ),
         
-        # # =======================
-        # # EV3B / MotorD
-        # # =======================
-        # bridge_node(
-        #     'ev3B', 'bridge_motorD',
-        #     'motor/motorD_cmd',
-        #     'ev3B/motorD/cmd',
-        #     'ev3B/motorD/status',
-        #     'motor/motorD_status'
-        # ),
+        # =======================
+        # EV3B / MotorD
+        # =======================
+        bridge_node(
+            'ev3B', 'bridge_motorD',
+            'motor/motorD_cmd',
+            'ev3B/motorD/cmd',
+            'ev3B/motorD/status',
+            'motor/motorD_status'
+        ),
 
-        # motor_action_node(
-        #     'ev3B',
-        #     'motor/motorD_cmd',
-        #     'motor/motorD_status',
-        #     'motorD_action',
-        #     'motorD_action_server'
-        # ),
+        motor_action_node(
+            'ev3B',
+            'motor/motorD_cmd',
+            'motor/motorD_status',
+            'motorD_action',
+            'motorD_action_server'
+        ),
 
-        # motor_controller(
-        #     'ev3B',
-        #     motor_id=4,   # EV3 port A
-        #     joint='D',
-        #     ratio=7.0
-        # ),
+        motor_controller(
+            'ev3B',
+            motor_id=4,   # EV3 port A
+            joint='D',
+            ratio=7.0
+        ),
         
-        # # =======================
-        # # EV3B / MotorE
-        # # =======================
-        # bridge_node(
-        #     'ev3B', 'bridge_motorE',
-        #     'motor/motorE_cmd',
-        #     'ev3B/motorE/cmd',
-        #     'ev3B/motorE/status',
-        #     'motor/motorE_status'
-        # ),
+        # =======================
+        # EV3B / MotorE
+        # =======================
+        bridge_node(
+            'ev3B', 'bridge_motorE',
+            'motor/motorE_cmd',
+            'ev3B/motorE/cmd',
+            'ev3B/motorE/status',
+            'motor/motorE_status'
+        ),
 
-        # motor_action_node(
-        #     'ev3B',
-        #     'motor/motorE_cmd',
-        #     'motor/motorE_status',
-        #     'motorE_action',
-        #     'motorE_action_server'
-        # ),
+        motor_action_node(
+            'ev3B',
+            'motor/motorE_cmd',
+            'motor/motorE_status',
+            'motorE_action',
+            'motorE_action_server'
+        ),
 
-        # motor_controller(
-        #     'ev3B',
-        #     motor_id=5,   # EV3 port A
-        #     joint='E',
-        #     ratio=1.0
-        # ),
+        motor_controller(
+            'ev3B',
+            motor_id=5,   # EV3 port A
+            joint='E',
+            ratio=-5.0
+        ),
         
-        # # =======================
-        # # EV3B / MotorF
-        # # =======================
-        # bridge_node(
-        #     'ev3B', 'bridge_motorF',
-        #     'motor/motorF_cmd',
-        #     'ev3B/motorF/cmd',
-        #     'ev3B/motorF/status',
-        #     'motor/motorF_status'
-        # ),
+        # =======================
+        # EV3B / MotorF
+        # =======================
+        bridge_node(
+            'ev3B', 'bridge_motorF',
+            'motor/motorF_cmd',
+            'ev3B/motorF/cmd',
+            'ev3B/motorF/status',
+            'motor/motorF_status'
+        ),
 
-        # motor_action_node(
-        #     'ev3B',
-        #     'motor/motorF_cmd',
-        #     'motor/motorF_status',
-        #     'motorF_action',
-        #     'motorF_action_server'
-        # ),
+        motor_action_node(
+            'ev3B',
+            'motor/motorF_cmd',
+            'motor/motorF_status',
+            'motorF_action',
+            'motorF_action_server'
+        ),
 
-        # motor_controller(
-        #     'ev3B',
-        #     motor_id=6,   # EV3 port A
-        #     joint='F',
-        #     ratio=24.0
-        # ),
+        motor_controller(
+            'ev3B',
+            motor_id=6,   # EV3 port A
+            joint='F',
+            ratio=-24.0
+        ),
     ])
