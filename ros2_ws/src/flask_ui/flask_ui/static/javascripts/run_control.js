@@ -15,8 +15,8 @@ document.querySelectorAll(".bev-button").forEach(button => {
             })
         })
         .then(response => response.json())                      //parse the JSON response, after that is redirect       
-        /*.then(() => {
+        .then(() => {
             window.location.href = nextPage;
-        });*/
+        });
     });
 })

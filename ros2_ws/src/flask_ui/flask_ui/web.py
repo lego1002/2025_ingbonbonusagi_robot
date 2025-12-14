@@ -29,7 +29,7 @@ def create_app(node):
     def index():
         return render_template("base.html")
 
-    """
+    
     @app.route("/progress<int:box_id>")
     def progress(box_id):
         return render_template(
@@ -37,7 +37,7 @@ def create_app(node):
             page=f"Beverage {box_id}",
             box_id=box_id
         )
-    """
+    
 
     @app.route("/get_states")
     def get_states():
