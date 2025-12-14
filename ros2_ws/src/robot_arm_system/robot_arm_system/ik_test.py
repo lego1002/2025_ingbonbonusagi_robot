@@ -243,47 +243,37 @@ def report_limit_violations(violations):
 # Subscriber 範例
 # ============================
 
-def traj_point_callback(msg):
-    values = msg.data
-    print(f"Received traj_point: {values}")
-
+class TrajSubscriber(Node):
+    def __init__(self):
+        super().__init__('traj_subscriber')
+        self.values = []
+        self.supscription = self.create_subscription(
+            Int32MultiArray,
+            'traj_point',
+            self.traj_point_callback,
+            10
+    )
+        
+    def traj_point_callback(self, msg):
+        self.values = msg.data
+        print(f"Received traj_point: {self.values}")
+        
 # ============================
 # 簡單測試
 # ============================
 
-# read trajectory points from JSON and return dictionary
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-traj_file_path = os.path.join(current_dir, "test_point.json")
-
-print(current_dir)
-print(traj_file_path)
-
-#with open(traj_file_path, "r") as traj:
-#    raw_points = json.load(traj)
-
-points = {
-    key: [value * 0.01 for value in values]
-    for key, values in raw_points
-}
-print(points)
+# read JSON and return dictionary
+json_path = "/home/joshlin69/Desktop/2025_ingbonbonusagi_robot/ros2_ws/test_point.json"
+with open(json_path, "r") as traj:
+    points = json.load(traj)
 
 if __name__ == "__main__":
     
-    #rclpy.init()
-
-    #node = Node('webpage_subscriber')
-    #subscribtion = node.create_subscription(
-    #    Int32MultiArray, 
-    #    'traj_point', 
-    #    traj_point_callback,
-    #    10)
-    
-    listX = [1,0]
-    
+    rclpy.init()
+    traj_subscriber = TrajSubscriber()
+        
     q0 = np.zeros(5)
-    for item in listX:
-        #target = np.array([0.30, 0.00, 0.20])  # 目標位置(m)
+    for item in traj_subscriber.values:
         target = points[str(item)]
         q_sol, err, ok = ik_constrained(target, q0)
 
@@ -297,4 +287,3 @@ if __name__ == "__main__":
             print("=> This target may be unreachable within joint limits (given your constraints).")
         else:
             print("✅ All joints within limits.")
-
