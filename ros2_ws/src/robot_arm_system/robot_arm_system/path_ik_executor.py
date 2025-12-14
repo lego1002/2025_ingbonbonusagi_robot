@@ -3,457 +3,274 @@
 
 import json
 import time
-import numpy as np
+from typing import Dict, List, Tuple
 
+import numpy as np
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionClient
+from std_msgs.msg import Float64
 
-from sensor_msgs.msg import JointState
-from ev3_interfaces.action import MotorCommand
-
-# ⚠️ IK 不動：照你原本的運動學算法
 from .ik_test import (
     ik_constrained,
     check_joint_limits,
     q_lims,
-    DEG
+    DEG,
 )
 
+# ==========
+# 工具
+# ==========
 
-# ============================
-# Utils
-# ============================
-
-def smoothstep(s: float) -> float:
-    # 0~1 -> 0~1, with zero slope at ends (C1 smooth)
-    return s * s * (3.0 - 2.0 * s)
-
-
-class JointTrajectoryPlanner:
+def _quintic_s(r: float) -> float:
     """
-    q0->q1 生成固定 dt 的平滑 setpoint（關節空間）
-    注意：這裡只做「小步」的平滑，真正安全靠 Cartesian 插值 + 每點 IK
+    Quintic time scaling:
+      s(r)=10r^3 - 15r^4 + 6r^5
+    r in [0,1] -> s in [0,1], and s'(0)=s'(1)=0, s''(0)=s''(1)=0
     """
-    def __init__(self, dt: float = 0.03, v_max_deg_s: float = 25.0):
-        self.dt = float(dt)
-        self.v_max = float(v_max_deg_s)
-
-    def plan(self, q0_deg: np.ndarray, q1_deg: np.ndarray):
-        q0_deg = np.asarray(q0_deg, dtype=float).reshape(-1)
-        q1_deg = np.asarray(q1_deg, dtype=float).reshape(-1)
-        dq = q1_deg - q0_deg
-
-        max_dq = float(np.max(np.abs(dq)))
-        if max_dq < 1e-9:
-            return [q1_deg.copy()]
-
-        # 以最大關節位移決定段落時間，確保不超速
-        T = max(self.dt, max_dq / max(1e-6, self.v_max))
-        steps = max(1, int(np.ceil(T / self.dt)))
-
-        traj = []
-        for i in range(1, steps + 1):
-            s = i / steps
-            ss = smoothstep(s)
-            q = q0_deg + ss * dq
-            traj.append(q)
-
-        return traj
+    r = max(0.0, min(1.0, r))
+    return 10.0*r**3 - 15.0*r**4 + 6.0*r**5
 
 
-def interpolate_xyz(p0: np.ndarray, p1: np.ndarray, step_m: float):
+def _load_points_from_json(path: str) -> List[np.ndarray]:
     """
-    Cartesian 線性插值，回傳 list[np.array(3,)]
-    step_m: 每步距離（公尺）
+    JSON format:
+      {
+        "0": [x,y,z],
+        "1": [x,y,z],
+        ...
+      }
+    unit: meters
     """
-    p0 = np.asarray(p0, dtype=float).reshape(3)
-    p1 = np.asarray(p1, dtype=float).reshape(3)
-    d = float(np.linalg.norm(p1 - p0))
-    if d < 1e-12:
-        return [p1.copy()]
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-    step_m = max(1e-6, float(step_m))
-    n = max(1, int(np.ceil(d / step_m)))
-
-    out = []
-    for i in range(1, n + 1):
-        s = i / n
-        p = (1.0 - s) * p0 + s * p1
-        out.append(p)
-    return out
-
-
-# ============================
-# Main executor
-# ============================
-
-class PathIKExecutor(Node):
-    def __init__(self):
-        super().__init__('path_ik_executor')
-
-        # -------------------------
-        # Parameters
-        # -------------------------
-        self.declare_parameter(
-            'json_path',
-            '/home/lego/Desktop/2025_ingbonbonusagi_robot/ros2_ws/test_point.json'
-        )
-
-        # Approach/Retreat（避開低點/障礙用）
-        self.declare_parameter('z_safe', 0.20)
-        self.declare_parameter('always_use_approach', True)
-        self.declare_parameter('retreat_after_each_point', True)
-
-        # ✅ 安全版核心：Cartesian 插值步距（越小越貼近直線、越安全、越耗算）
-        self.declare_parameter('cart_step_m', 0.01)   # 1cm，建議先用 0.01，確認穩再降到 0.005
-
-        # 關節平滑（在 Cartesian 已安全的前提下，只用來變順）
-        self.declare_parameter('dt', 0.03)            # setpoint 更新周期
-        self.declare_parameter('v_max_deg_s', 25.0)   # 關節速度上限（deg/s）
-
-        # Motor
-        self.declare_parameter('speed', 120.0)        # 給 motor_action 的 speed 參數
-        self.declare_parameter('use_motor_f', False)  # IK 只有 5 軸，F 先不動
-
-        # ✅ 工作空間限制（你說「超出手臂運動空間」就靠這個擋）
-        # 以 base 為中心的半徑 r = sqrt(x^2+y^2)
-        self.declare_parameter('workspace_r_min', 0.00)
-        self.declare_parameter('workspace_r_max', 0.35)
-        self.declare_parameter('workspace_z_min', 0.00)
-        self.declare_parameter('workspace_z_max', 0.40)
-
-        # Debug
-        self.declare_parameter('log_every_n_setpoints', 80)
-
-        self.json_path = str(self.get_parameter('json_path').value)
-
-        self.z_safe = float(self.get_parameter('z_safe').value)
-        self.always_use_approach = bool(self.get_parameter('always_use_approach').value)
-        self.retreat_after_each_point = bool(self.get_parameter('retreat_after_each_point').value)
-
-        self.cart_step_m = float(self.get_parameter('cart_step_m').value)
-
-        self.dt = float(self.get_parameter('dt').value)
-        self.v_max_deg_s = float(self.get_parameter('v_max_deg_s').value)
-
-        self.speed = float(self.get_parameter('speed').value)
-        self.use_motor_f = bool(self.get_parameter('use_motor_f').value)
-
-        self.ws_r_min = float(self.get_parameter('workspace_r_min').value)
-        self.ws_r_max = float(self.get_parameter('workspace_r_max').value)
-        self.ws_z_min = float(self.get_parameter('workspace_z_min').value)
-        self.ws_z_max = float(self.get_parameter('workspace_z_max').value)
-
-        self.log_every_n = int(self.get_parameter('log_every_n_setpoints').value)
-
-        # -------------------------
-        # Action servers (A~F)
-        # -------------------------
-        self.action_names = {
-            'A': '/ev3A/motorA_action',
-            'B': '/ev3A/motorB_action',
-            'C': '/ev3A/motorC_action',
-            'D': '/ev3B/motorD_action',
-            'E': '/ev3B/motorE_action',
-            'F': '/ev3B/motorF_action',
-        }
-        # EV3 ports: 1=A,2=B,3=C
-        self.motor_id = {'A': 1, 'B': 2, 'C': 3, 'D': 1, 'E': 2, 'F': 3}
-
-        # ⚠️ 不要用 self.clients（Node 裡可能撞到），用 action_clients
-        self.action_clients = {
-            j: ActionClient(self, MotorCommand, name)
-            for j, name in self.action_names.items()
-        }
-
-        # RViz joint state publisher
-        self.js_pub = self.create_publisher(JointState, '/ik_joint_states', 10)
-
-        # 執行一次就結束
-        self._done = False
-        self.create_timer(0.1, self._tick_once)
-
-    # -------------------------
-    # One-shot tick
-    # -------------------------
-    def _tick_once(self):
-        if self._done:
-            return
-        self._done = True
-
-        # 1) 讀 JSON keypoints
-        key_xyz = self.load_keypoints_xyz()
-        self.get_logger().info(f'Loaded {len(key_xyz)} keypoints from JSON.')
-
-        # 2) 生成 approach/retreat exec points
-        exec_xyz = self.expand_with_approach_retreat(key_xyz)
-        self.get_logger().info(f'Expanded to {len(exec_xyz)} exec points (with approach/retreat).')
-
-        # 3) 再把 exec_xyz 做 Cartesian 插值（安全直線路徑）
-        path_xyz = self.build_cartesian_path(exec_xyz, self.cart_step_m)
-        self.get_logger().info(f'Cartesian interpolation: step={self.cart_step_m:.4f} m, total_xyz_points={len(path_xyz)}')
-
-        # 4) 等 action server
-        self.wait_for_servers()
-
-        # 5) 每個 XYZ 做 IK + joint limit + workspace 檢查，得到 q_path
-        q_path = self.solve_path_ik(path_xyz)
-        if q_path is None or len(q_path) < 2:
-            self.get_logger().error('IK path empty / failed.')
-            return
-
-        self.get_logger().info(f'IK path ready: q_points={len(q_path)}')
-
-        # 6) 串流執行（安全路徑已在 XYZ 層做完）
-        self.stream_execute(q_path)
-
-        self.get_logger().info('Path execution finished.')
-
-        # 不在這裡 rclpy.shutdown()（避免跟 launch/ctrl-c 互相踩）
-        # main() 會在 done 後安全結束 spin
-
-    # -------------------------
-    # JSON loader
-    # -------------------------
-    def load_keypoints_xyz(self) -> np.ndarray:
-        with open(self.json_path, 'r') as f:
-            raw = json.load(f)
-
-        # 支援 {"0":[...], "1":[...]} 形式
-        if isinstance(raw, dict):
-            pts = [raw[k] for k in sorted(raw.keys(), key=int)]
-        elif isinstance(raw, list):
-            # 也容許 list of {"x":..,"y":..,"z":..}
-            pts = []
-            for it in raw:
-                if isinstance(it, dict) and all(k in it for k in ['x', 'y', 'z']):
-                    pts.append([it['x'], it['y'], it['z']])
-                else:
-                    pts.append(it)
-        else:
-            raise RuntimeError('Unsupported JSON format for keypoints.')
-
-        pts = np.array(pts, dtype=float).reshape(-1, 3)  # meters
+    if isinstance(data, list):
+        # 兼容 list of dict / list of xyz
+        pts = []
+        for item in data:
+            if isinstance(item, dict) and all(k in item for k in ("x", "y", "z")):
+                pts.append(np.array([float(item["x"]), float(item["y"]), float(item["z"])], dtype=float))
+            elif isinstance(item, (list, tuple)) and len(item) == 3:
+                pts.append(np.array([float(item[0]), float(item[1]), float(item[2])], dtype=float))
+            else:
+                raise ValueError("Unsupported JSON list item format.")
         return pts
 
-    # -------------------------
-    # Approach/Retreat expansion
-    # -------------------------
-    def expand_with_approach_retreat(self, pts_xyz: np.ndarray) -> np.ndarray:
-        if pts_xyz.shape[0] == 0:
-            return pts_xyz
+    if not isinstance(data, dict):
+        raise ValueError("JSON must be dict or list.")
 
-        z_safe = self.z_safe
-        out = []
+    # dict: sort by numeric key if possible
+    def key_fn(k: str):
+        try:
+            return int(k)
+        except Exception:
+            return k
 
-        # 第一點：先拉到安全高度
-        p0 = pts_xyz[0].copy()
-        p0_hi = p0.copy()
-        p0_hi[2] = max(z_safe, p0[2])
-        out.append(p0_hi)
+    keys = sorted(list(data.keys()), key=key_fn)
+    pts = []
+    for k in keys:
+        v = data[k]
+        if not (isinstance(v, (list, tuple)) and len(v) == 3):
+            raise ValueError(f'JSON key "{k}" must be [x,y,z].')
+        pts.append(np.array([float(v[0]), float(v[1]), float(v[2])], dtype=float))
+    return pts
 
-        if self.always_use_approach and p0[2] < p0_hi[2] - 1e-9:
-            out.append(p0.copy())
 
-        for i in range(1, pts_xyz.shape[0]):
-            p = pts_xyz[i].copy()
-            p_hi = p.copy()
-            p_hi[2] = max(z_safe, p[2])
+# ==========
+# 主節點
+# ==========
 
-            prev = out[-1].copy()
+class PathIKExecutor(Node):
+    """
+    Pure Joint-Space execution:
+      - No cartesian interpolation
+      - No approach/retreat
+      - Per keypoint: IK once -> q (5 DOF)
+      - Between q_i and q_{i+1}: joint-space smooth interpolation (quintic)
+      - Publish joint angles (deg) to motor/*_cmd_in topics
+    """
 
-            # 離開上一點前也先回安全高度（可選）
-            if self.always_use_approach:
-                prev_hi = prev.copy()
-                prev_hi[2] = max(z_safe, prev[2])
-                if np.linalg.norm(prev_hi - prev) > 1e-9:
-                    out.append(prev_hi)
+    def __init__(self):
+        super().__init__("path_ik_executor")
 
-            # 平移到目標上方
-            if np.linalg.norm(p_hi - out[-1]) > 1e-9:
-                out.append(p_hi)
+        # --- Parameters ---
+        self.declare_parameter("json_path", "/home/lego/Desktop/2025_ingbonbonusagi_robot/ros2_ws/test_point.json")
+        self.declare_parameter("dt", 0.04)               # seconds
+        self.declare_parameter("v_max_deg_s", 20.0)      # deg/s (per joint)
+        self.declare_parameter("joint_step_deg", 5.0)    # max delta per step (deg)
+        self.declare_parameter("settle_sec", 0.0)        # optional wait after each segment
+        self.declare_parameter("q_init_deg", [0.0, 0.0, 0.0, 0.0, 0.0])  # IK initial guess (5 DOF)
+        self.declare_parameter("j6_deg", 0.0)            # joint6 fixed (if you have motorF etc.)
+        self.declare_parameter("loop", False)            # loop path forever
 
-            # 下降到目標
-            if p[2] < p_hi[2] - 1e-9:
-                if np.linalg.norm(p - out[-1]) > 1e-9:
-                    out.append(p)
+        self.json_path = self.get_parameter("json_path").get_parameter_value().string_value
+        self.dt = float(self.get_parameter("dt").value)
+        self.v_max_deg_s = float(self.get_parameter("v_max_deg_s").value)
+        self.joint_step_deg = float(self.get_parameter("joint_step_deg").value)
+        self.settle_sec = float(self.get_parameter("settle_sec").value)
+        self.q_init_deg = list(self.get_parameter("q_init_deg").value)
+        self.j6_deg = float(self.get_parameter("j6_deg").value)
+        self.loop = bool(self.get_parameter("loop").value)
 
-            # 到點後撤回安全高度
-            if self.retreat_after_each_point:
-                if np.linalg.norm(p_hi - out[-1]) > 1e-9:
-                    out.append(p_hi)
+        # --- Publishers (publish joint angle in DEG) ---
+        # These topics match what you showed in `ros2 topic list`
+        self.pub = {
+            "A": self.create_publisher(Float64, "/ev3A/motor/motorA_cmd_in", 10),
+            "B": self.create_publisher(Float64, "/ev3A/motor/motorB_cmd_in", 10),
+            "C": self.create_publisher(Float64, "/ev3A/motor/motorC_cmd_in", 10),
+            "D": self.create_publisher(Float64, "/ev3B/motor/motorD_cmd_in", 10),
+            "E": self.create_publisher(Float64, "/ev3B/motor/motorE_cmd_in", 10),
+            "F": self.create_publisher(Float64, "/ev3B/motor/motorF_cmd_in", 10),
+        }
 
-        # 去掉重複
-        compact = [out[0]]
-        for p in out[1:]:
-            if np.linalg.norm(np.asarray(p) - np.asarray(compact[-1])) > 1e-9:
-                compact.append(p)
+        # Load points
+        self.key_xyz = _load_points_from_json(self.json_path)
+        self.get_logger().info(f"Loaded {len(self.key_xyz)} keypoints from JSON.")
 
-        return np.array(compact, dtype=float)
+        # Execute
+        self._run()
 
-    # -------------------------
-    # Cartesian path builder
-    # -------------------------
-    def build_cartesian_path(self, exec_xyz: np.ndarray, step_m: float) -> np.ndarray:
-        if exec_xyz.shape[0] == 0:
-            return exec_xyz
-
-        out = [exec_xyz[0].copy()]
-        for i in range(exec_xyz.shape[0] - 1):
-            seg = interpolate_xyz(exec_xyz[i], exec_xyz[i + 1], step_m)
-            out.extend(seg)
-        return np.array(out, dtype=float)
-
-    # -------------------------
-    # Workspace constraint
-    # -------------------------
-    def within_workspace(self, xyz: np.ndarray) -> bool:
-        x, y, z = float(xyz[0]), float(xyz[1]), float(xyz[2])
-        r = (x * x + y * y) ** 0.5
-        if r < self.ws_r_min - 1e-12:
-            return False
-        if r > self.ws_r_max + 1e-12:
-            return False
-        if z < self.ws_z_min - 1e-12:
-            return False
-        if z > self.ws_z_max + 1e-12:
-            return False
-        return True
-
-    # -------------------------
-    # Action helpers
-    # -------------------------
-    def wait_for_servers(self):
-        self.get_logger().info('Waiting for all motor action servers...')
-        for c in self.action_clients.values():
-            c.wait_for_server()
-        self.get_logger().info('All action servers ready.')
-
-    def publish_joint_state(self, q_rad_5):
-        msg = JointState()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.name = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-        msg.position = list(q_rad_5)
-        self.js_pub.publish(msg)
-
-    def send_abs_stream(self, joint_letter: str, joint_deg: float, speed: float):
+    def _publish_joints_deg(self, q_deg_6: List[float]):
         """
-        串流送 abs setpoint（不等待完成）
-        需搭配 motor_action 的 streaming_move_like=True
+        q_deg_6: [j1..j6] in degrees
         """
-        goal = MotorCommand.Goal()
-        goal.mode = 'abs'
-        goal.motor_id = int(self.motor_id[joint_letter])
-        goal.value1 = float(joint_deg)
-        goal.value2 = float(speed)
-        self.action_clients[joint_letter].send_goal_async(goal)
+        msg = Float64()
+        msg.data = float(q_deg_6[0]); self.pub["A"].publish(msg)
+        msg = Float64()
+        msg.data = float(q_deg_6[1]); self.pub["B"].publish(msg)
+        msg = Float64()
+        msg.data = float(q_deg_6[2]); self.pub["C"].publish(msg)
+        msg = Float64()
+        msg.data = float(q_deg_6[3]); self.pub["D"].publish(msg)
+        msg = Float64()
+        msg.data = float(q_deg_6[4]); self.pub["E"].publish(msg)
+        msg = Float64()
+        msg.data = float(q_deg_6[5]); self.pub["F"].publish(msg)
 
-    # -------------------------
-    # IK for every XYZ point
-    # -------------------------
-    def solve_path_ik(self, path_xyz: np.ndarray):
-        q_path = []
-        q_seed = np.zeros(5)
-
-        for i, xyz in enumerate(path_xyz):
-            if not self.within_workspace(xyz):
-                r = float(np.hypot(xyz[0], xyz[1]))
-                self.get_logger().error(
-                    f'Workspace violation at xyz[{i}]={xyz.tolist()} r={r:.3f} '
-                    f'(r[{self.ws_r_min:.3f},{self.ws_r_max:.3f}], z[{self.ws_z_min:.3f},{self.ws_z_max:.3f}])'
-                )
-                return None
-
-            q_sol, err, ok = ik_constrained(xyz, q_seed)
-            if not ok:
-                self.get_logger().error(f'IK failed at xyz[{i}]={xyz.tolist()} err={err:.6f}')
-                return None
-
-            violations = check_joint_limits(q_sol, q_lims)
-            if violations:
-                self.get_logger().error(f'Joint limit violation at xyz[{i}]={xyz.tolist()}')
-                return None
-
-            q_path.append(q_sol.copy())
-            q_seed = q_sol.copy()
-
-            if i == 0 or (i % 300 == 0):
-                self.get_logger().info(f'IK progress {i+1}/{len(path_xyz)}')
-
-        return np.array(q_path, dtype=float)
-
-    # -------------------------
-    # Execute with smooth streaming
-    # -------------------------
-    def stream_execute(self, q_path: np.ndarray):
-        planner = JointTrajectoryPlanner(dt=self.dt, v_max_deg_s=self.v_max_deg_s)
-
-        # 估算 setpoints
-        est = 0
-        for i in range(len(q_path) - 1):
-            est += len(planner.plan(q_path[i] / DEG, q_path[i + 1] / DEG))
-
-        self.get_logger().info(
-            f'Streaming execute: dt={self.dt:.3f}s, v_max={self.v_max_deg_s:.1f} deg/s, setpoints≈{est}'
+    def _ik_for_xyz(self, xyz: np.ndarray, q_guess_rad_5: np.ndarray):
+        """
+        Returns:
+        q_sol (np.ndarray, rad, shape (5,))
+        ok (bool)
+        """
+        q_sol, err, ok = ik_constrained(
+            xyz,
+            q_init=np.array([
+                q_guess_rad_5[0],
+                q_guess_rad_5[1],
+                q_guess_rad_5[2],
+                0.0,
+                q_guess_rad_5[4],
+            ])
         )
 
-        t_next = time.time()
-        sent = 0
+        if not ok:
+            self.get_logger().error(
+                f"IK failed at xyz={xyz.tolist()} (pos err={err:.6g} m)"
+            )
+            return q_sol, False
 
-        for i in range(len(q_path) - 1):
-            q0_deg = q_path[i] / DEG
-            q1_deg = q_path[i + 1] / DEG
-            traj = planner.plan(q0_deg, q1_deg)
+        viol = check_joint_limits(q_sol, q_lims)
+        if viol:
+            self.get_logger().error(
+                f"Joint limit violation at xyz={xyz.tolist()}, joints={viol}"
+            )
+            return q_sol, False
 
-            for q_deg in traj:
-                sent += 1
-                q_rad = q_deg * DEG
-
-                # RViz
-                self.publish_joint_state(q_rad)
-
-                # Log
-                if sent == 1 or (self.log_every_n > 0 and sent % self.log_every_n == 0) or sent == est:
-                    q_print = [round(float(v), 1) for v in q_deg.tolist()]
-                    self.get_logger().info(f'Setpoint {sent}/{est} q_deg={q_print}')
-
-                # 送馬達 A~E（對應 joint1~joint5）
-                for j_letter, val_deg in zip(['A', 'B', 'C', 'D', 'E'], q_deg):
-                    self.send_abs_stream(j_letter, float(val_deg), self.speed)
-
-                if self.use_motor_f:
-                    self.send_abs_stream('F', 0.0, self.speed)
-
-                # 固定 dt 節奏（避免漂移）
-                now = time.time()
-                if now < t_next:
-                    time.sleep(t_next - now)
-                t_next += self.dt
+        # ✅ 關鍵：成功路徑一定要回傳
+        return q_sol, True
 
 
-def main():
-    rclpy.init()
-    node = PathIKExecutor()
+    def _segment_steps(self, q0_deg: np.ndarray, q1_deg: np.ndarray) -> int:
+        dq = np.abs(q1_deg - q0_deg)
+        # step constraint
+        n_step = int(np.ceil(np.max(dq) / max(1e-6, self.joint_step_deg)))
+        # speed constraint: dq <= v_max * dt * steps
+        n_vel = int(np.ceil(np.max(dq) / max(1e-6, self.v_max_deg_s * self.dt)))
+        n = max(1, n_step, n_vel)
+        return n
 
+    def _run_once(self) -> bool:
+        # IK for each keypoint
+        q_guess_rad = np.array(self.q_init_deg, dtype=float) * DEG  # 5 DOF guess
+        q_list_rad: List[np.ndarray] = []
+
+        for i, xyz in enumerate(self.key_xyz):
+            q_sol, ok = self._ik_for_xyz(xyz, q_guess_rad)
+            if not ok:
+                self.get_logger().error("IK path empty / failed.")
+                return False
+            q_list_rad.append(q_sol.copy())
+            q_guess_rad = q_sol  # warm start
+            self.get_logger().info(f"IK ok for keypoint {i+1}/{len(self.key_xyz)}: xyz={xyz.tolist()}")
+
+        self.get_logger().info(f"IK succeeded for {len(q_list_rad)} keypoints. Start joint-space execute.")
+
+        # Execute segments
+        for seg in range(len(q_list_rad) - 1):
+            q0_deg = (q_list_rad[seg] / DEG).astype(float)      # 5
+            q1_deg = (q_list_rad[seg + 1] / DEG).astype(float)  # 5
+
+            steps = self._segment_steps(q0_deg, q1_deg)
+            self.get_logger().info(
+                f"Segment {seg+1}/{len(q_list_rad)-1}: steps={steps}, "
+                f"q0={np.round(q0_deg, 2).tolist()}, q1={np.round(q1_deg, 2).tolist()}"
+            )
+
+            for k in range(steps + 1):
+                r = k / float(steps)
+                s = _quintic_s(r)
+                qk_deg_5 = q0_deg + s * (q1_deg - q0_deg)
+
+                # Safety check (5 joints)
+                viol = check_joint_limits(qk_rad_5, q_lims)
+                if viol:
+                    self.get_logger().error(
+                        f"Joint limit violation during interpolation at seg={seg}, step={k}/{steps}, joints={viol}"
+                    )
+                    return False
+
+                # Map to 6 joints (j6 fixed)
+                qk_deg_6 = [
+                    float(qk_deg_5[0]),  # J1
+                    float(qk_deg_5[1]),  # J2
+                    float(qk_deg_5[2]),  # J3
+                    float(qk_deg_5[3]),  # J4
+                    float(qk_deg_5[4]),  # J5
+                    float(self.j6_deg),  # J6 fixed
+                ]
+
+                self._publish_joints_deg(qk_deg_6)
+                time.sleep(self.dt)
+
+            if self.settle_sec > 0.0:
+                time.sleep(self.settle_sec)
+
+        self.get_logger().info("Path execution finished.")
+        return True
+
+    def _run(self):
+        ok = self._run_once()
+        if not self.loop:
+            return
+
+        while rclpy.ok() and ok:
+            ok = self._run_once()
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = None
     try:
-        # spin 到 node 真的跑完
-        while rclpy.ok():
-            rclpy.spin_once(node, timeout_sec=0.2)
-            if getattr(node, '_done', False):
-                # 已執行完畢，給一點時間讓最後幾個 async goal 送出
-                time.sleep(0.2)
-                break
+        node = PathIKExecutor()
+        # 這個 node 自己跑完就結束；不需要 spin
     except KeyboardInterrupt:
         pass
     finally:
-        node.destroy_node()
-        try:
-            if rclpy.ok():
-                rclpy.shutdown()
-        except Exception:
-            pass
+        if node is not None:
+            node.destroy_node()
+        rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
