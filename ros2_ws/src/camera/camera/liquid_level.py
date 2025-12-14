@@ -69,7 +69,7 @@ class LiquidLevelNode(Node):
         # ------------------------------
         # 穩定判斷
         # ------------------------------
-        self.stable_time = 0.5  # 秒
+        self.stable_time = 1  # 秒
         self.last_reach_time = None
         self.reach_state = False  # 最終輸出
 
@@ -208,13 +208,13 @@ class LiquidLevelNode(Node):
                 # 已達到穩定秒數
                 if now - self.last_reach_time >= self.stable_time:
                     if not self.reach_state:
-                        self.get_logger().info("✅ 液面已穩定達標！")
+                        self.get_logger().info("液面達標！")
                     self.reach_state = True
         else:
             # 一旦不達標 → 重置
             self.last_reach_time = None
             if self.reach_state:
-                self.get_logger().info("❌ 液面離開目標區間")
+                self.get_logger().info("液面離開目標區間")
             self.reach_state = False
 
         # Publish 結果
