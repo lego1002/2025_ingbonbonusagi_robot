@@ -7,13 +7,21 @@ from flask_ui.web import create_app
 
 
 class FlaskNode(Node):
+    # 4 sets of predefined trajectory points for 4 boxes (beverage options)
+    traj_point = {
+        '1': [0, 1],
+        '2': [3, 2],
+        '3': [2, 1],
+        '4': [0, 2]
+    }
+    
     def __init__(self):
         super().__init__("flask_node")
         self.get_logger().info("Starting Flask UI...")
 
         self.publisher = self.create_publisher(
-            String,
-            #Int32MultiArray,
+            #String,
+            Int32MultiArray,
             "traj_point",
             10
         )
@@ -23,7 +31,7 @@ class FlaskNode(Node):
             2: 0,
             3: 0
         }
-
+        
         app = create_app(self)
 
         Thread(
@@ -40,11 +48,9 @@ class FlaskNode(Node):
         self.get_logger().info("Flask UI started")
 
     def publish_box(self, box_id):
-        msg = String()
-        #msg = Int32MultiArray()
-        #buttonNum = int(box_id)
-        #msg.data = [int(box_id)]
-        msg.data = str(box_id)
+        msg = Int32MultiArray()
+        buttonNum = int(box_id)
+        msg.data = self.traj_point[str(buttonNum)]
         self.publisher.publish(msg)
 
 
