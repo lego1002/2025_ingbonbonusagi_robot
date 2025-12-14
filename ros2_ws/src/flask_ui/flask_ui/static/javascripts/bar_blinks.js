@@ -66,30 +66,5 @@ async function updateBoxStateFromServer() {
     }
 }
 
-/*
-const sequence = [
-    {stop: 0, start: 1, duration: 5000},
-    {stop: 1, start: 2, duration: 5000},
-    {stop: 2, start: null, duration: 0}
-];
-
-function runSequenc(index = 0) {
-    if (index >= sequence.length) return;
-
-    let step = sequence[index];
-
-    if (step.stop != null) {
-        resetBlinkingBox(step.stop);
-    }
-    if (step.start != null) {
-        blinking(step.start);
-    }
-    if (step.duration > 0) {
-        setTimeout(() => runSequenc(index + 1), step.duration);
-    }
-}
-
-//runSequenc();*/
-
 // control programs are down here
 setInterval(updateBoxStateFromServer, 500);
