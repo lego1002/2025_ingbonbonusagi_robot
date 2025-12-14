@@ -42,6 +42,8 @@ setup(
             'distributor = robot_arm_system.distributor_node:main',
             'ik_test = robot_arm_system.ik_test:main',
             'ik_test_lego_using = robot_arm_system.ik_test_lego_using:main',
+            'path_ik_executor = robot_arm_system.path_ik_executor:main',
+            'zero_manager = robot_arm_system.zero_manager:main',
         ],
     },
 )
