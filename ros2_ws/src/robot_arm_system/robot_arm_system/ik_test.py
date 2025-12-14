@@ -3,6 +3,7 @@ from rclpy.node import Node
 from std_msgs.msg import Int32MultiArray
 import json
 import numpy as np
+import os 
 
 # ============================
 # 基本參數
@@ -242,42 +243,43 @@ def report_limit_violations(violations):
 # Subscriber 範例
 # ============================
 
-buttonNum = None
-#pt0 = pt1 = None
 def traj_point_callback(msg):
-    global buttonNum
-    #global pt0, pt1
     values = msg.data
     print(f"Received traj_point: {values}")
-
-    buttonNum = values
-    
-    #if len(values) == 2:
-    #    pt0 = values[0]
-    #    pt1 = values[1]
-    #    print(f"Point 1: {pt0}, Point 2: {pt1}")
 
 # ============================
 # 簡單測試
 # ============================
 
+# read trajectory points from JSON and return dictionary
 
-with open("test_point.json", "r") as traj:
-    points = json.load(traj)*0.01
+current_dir = os.path.dirname(os.path.abspath(__file__))
+traj_file_path = os.path.join(current_dir, "test_point.json")
+
+print(current_dir)
+print(traj_file_path)
+
+#with open(traj_file_path, "r") as traj:
+#    raw_points = json.load(traj)
+
+points = {
+    key: [value * 0.01 for value in values]
+    for key, values in raw_points
+}
+print(points)
 
 if __name__ == "__main__":
     
-    rclpy.init()
+    #rclpy.init()
 
-    node = Node('webpage_subscriber')
-    subscribtion = node.create_subscription(
-        Int32MultiArray, 
-        'traj_point', 
-        traj_point_callback,
-        10)
+    #node = Node('webpage_subscriber')
+    #subscribtion = node.create_subscription(
+    #    Int32MultiArray, 
+    #    'traj_point', 
+    #    traj_point_callback,
+    #    10)
     
-    if buttonNum is 1:
-        listX = [1,0]
+    listX = [1,0]
     
     q0 = np.zeros(5)
     for item in listX:
@@ -295,3 +297,4 @@ if __name__ == "__main__":
             print("=> This target may be unreachable within joint limits (given your constraints).")
         else:
             print("✅ All joints within limits.")
+
