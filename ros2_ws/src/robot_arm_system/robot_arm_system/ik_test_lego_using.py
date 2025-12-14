@@ -62,7 +62,7 @@ class IKPathPlayer(Node):
         self.joint_state_pub = self.create_publisher(JointState, "/ik_joint_states", 10)
 
         # 讀 JSON 路徑
-        self.path = self.load_path()                        # NEED CHECKING
+        self.path = self.load_path()
         self.idx = 0
 
         # 前一姿態（rad, 5 joints）
@@ -90,19 +90,6 @@ class IKPathPlayer(Node):
         
     def traj_point_callback(self, msg):
         self.values = msg.data
-
-    """
-    def load_path(self):
-        with open(JSON_PATH, "r") as f:
-            data = json.load(f)
-
-        path = []
-        for p in data:
-            # JSON x,y,z 是 cm → 轉成 m
-            xyz = np.array([p["x"], p["y"], p["z"]], dtype=float) * 0.01
-            path.append((p.get("comment", ""), xyz))
-        return path
-    """
 
     def load_path(self):
         with open(JSON_PATH, "r") as traj:
