@@ -3,7 +3,7 @@ document.querySelectorAll(".bev-button").forEach(button => {
         event.preventDefault();
         
         const boxId = button.dataset.boxId;
-        /*const nextPage = '/progress' + boxId;*/
+        const nextPage = '/progress' + boxId;
 
         fetch("http://127.0.0.1:5000/start_moving", {           // send a POST request to the flask server
             method: "POST",                                     //there must be a "/start-program" route defined in the flask server (user_interface.py)
